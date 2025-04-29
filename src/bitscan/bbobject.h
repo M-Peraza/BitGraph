@@ -10,8 +10,8 @@
 #define  __BB_OBJECT_H__
 
 #include <iostream>
-#include "bitscan/bbtypes.h"
-#include "bitscan/bbconfig.h"
+#include "bbtypes.h"
+#include "bbconfig.h"
 
 //////////////////
 //

@@ -12,7 +12,7 @@
 
 #include "utils/common.h"
 #include "utils/logger.h"
-#include "bitscan/bbset.h"
+#include "bbset.h"
 #include <array>
 #include <functional>
 

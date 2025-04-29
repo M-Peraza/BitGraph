@@ -7,8 +7,8 @@
  * @author pss
  **/
 
-#include "bitscan/bbsentinel.h"			//base of the non-sparse hierarchy
-#include "bitscan/bbscan_sparse.h"	
+#include "bbsentinel.h"			//base of the non-sparse hierarchy
+#include "bbscan_sparse.h"	
 
 //useful aliases
 
