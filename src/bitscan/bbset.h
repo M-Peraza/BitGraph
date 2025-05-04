@@ -1,13 +1,19 @@
 /**  
- * @file bbset.h file 
- * @brief header file of the BitSet class from the BITSCAN library.
+ * @file bbset.h
+ * @brief Header file of the BitSet class from the BITSCAN library.
  *		  Manages bitstrings of any size as an array of bitblocks (64-bit numbers)
  * @author pss
- * @details: Created 2014, last_update 01/02/2025
- * @details: This type has all the abilities except efficient bitscanning,which requires 
- *			 an additional data structure. It does have a basic bitscanning feature.
- * @details  For efficient bitscanning use the BBScan class or the external feature in the
- *			 namespace bbscan.
+ * @version 1.0
+ * @date 2014
+ * @last_update 2025-02-06
+ * 
+ * @details This file contains the BitSet class which manages bitstrings of any size as 
+ * an array of bitblocks (64-bit numbers). This type has all the basic abilities except 
+ * efficient bitscanning, which requires an additional data structure. It does have a
+ * basic bitscanning feature.
+ * 
+ * For efficient bitscanning use the BBScan class or the external feature in the
+ * namespace bbscan.
  **/
 
 #ifndef __BBSET_H__
@@ -21,69 +27,92 @@
 
 #include <cassert>					//uncomment #undef NDEBUG in bbconfig.h to enable run-time assertions
 
-//useful alias
+/**
+ * @typedef vint
+ * @brief Alias for a vector of integers
+ */
 using vint	= std::vector<int>;
+
+/**
+ * @typedef vbset
+ * @brief Alias for a vector of bitboards
+ */
 using vbset = std::vector<BITBOARD>;	
 
-/////////////////////////////////
-//
-// BitSet class 
-//
-// Manages bit strings greater than WORD_SIZE 
-// @details Does not use HW dependent instructions (intrinsics), nor does it cache information for very fast bitscanning
-//
-///////////////////////////////////
+/**
+ * @class BitSet
+ * @brief Class that manages bit strings greater than WORD_SIZE
+ * @details Does not use HW dependent instructions (intrinsics), nor does it cache 
+ * information for very fast bitscanning
+ * @extends BBObject
+ */
 class BitSet:public BBObject{
 		
 public:	
 
-/////////////////////////////
-// Independent operators / masks  
-// comment: do not modify this bitset
+/**
+ * @name Independent Operators and Masks
+ * @brief Operations that do not modify the original bitset
+ * @{
+ */
 	
 	/**
 	* @brief AND between lhs and rhs bitsets, stores the result in an existing bitset res
-	* @returns reference to the resulting bitstring res
-	**/
+	* @param lhs The left-hand side bitset
+	* @param rhs The right-hand side bitset
+	* @param res The destination bitset where the result is stored
+	* @return Reference to the resulting bitstring res
+	*/
 	friend BitSet&  AND			(const BitSet& lhs, const BitSet& rhs,  BitSet& res);	
 	
 	/**
 	* @brief AND between lhs and rhs bitsets
-	* @returns resulting bitset
-	**/
+	* @param lhs The left-hand side bitset
+	* @param rhs The right-hand side bitset
+	* @return Resulting bitset
+	*/
 	friend BitSet   AND			(BitSet lhs, const BitSet& rhs)									{ return lhs &= rhs; }
 			
 	/**
 	* @brief AND between lhs and rhs bitsets in the CLOSED bit-range [firstBit, lastBit]
-	*		 The result is stored in bitset res. The remaining bits of res outside the range
-	*		 are set to 0 if the template parameter Erase  is true.
-	* @param template<Erase>: if true, the bits of res outside [firstBit, lastBit] are set to 0
-	* @param firstBit, lastBit: closed bit-range 0 < firstBit <= lastBit
-	* @param lhs, rhs: input bitsets
-	* @param res: output bitset
-	* @returns reference to the resulting bitstring res
-	* @details: The capacity of lhs and rhs must be the same.
-	*			The capacity of res must be greater or equal than lhs / rhs
-	* @details: created 06/02/2025
-	* @details: GCC does not allow default template parameters in friend functions
-	**/
+	*
+	* The result is stored in bitset res. The remaining bits of res outside the range
+	* are set to 0 if the template parameter Erase is true.
+	* 
+	* @tparam Erase If true, the bits of res outside [firstBit, lastBit] are set to 0
+	* @param firstBit Starting bit position (inclusive)
+	* @param lastBit Ending bit position (inclusive)
+	* @param lhs The left-hand side bitset
+	* @param rhs The right-hand side bitset
+	* @param res The destination bitset where the result is stored
+	* @return Reference to the resulting bitstring res
+	* 
+	* @note The capacity of lhs and rhs must be the same.
+	* @note The capacity of res must be greater or equal than lhs / rhs
+	* @note GCC does not allow default template parameters in friend functions
+	*/
 	template<bool Erase>
 	friend BitSet& AND			(int firstBit, int lastBit, const BitSet& lhs, const BitSet& rhs, BitSet& res);
 
 	/**
-	* @brief AND between lhs and rhs bitsets in the closed block- range [firstBlock, lastBlock]. 
-	*		 Stores the result in res. The remaining bits of res outside the range
-	*		 are set to 0 if the template parameter Erase is true.
-	*		 If lastBock==-1, the range is till the end of the bitset, i.e., [firstBlock, capacity())
-	*		 
-	*		I.  The capacity of lhs and rhs must be the same. 
-	*		II. The capacity of res must be at least the same as lhs nand rhs
-	* @param template<Erase>: if true, the bits of res outside [firstBit, lastBit] are set to 0
-	* @param lhs, rhs: input bitsets
-	* @param res: output bitset
-	* @returns reference to the resulting bitstring res
-	* @details: GCC does not allow default template parameters in friend functions
-	**/
+	* @brief AND between lhs and rhs bitsets in the closed block-range [firstBlock, lastBlock]
+	*
+	* Stores the result in res. The remaining bits of res outside the range
+	* are set to 0 if the template parameter Erase is true.
+	* If lastBock==-1, the range is till the end of the bitset, i.e., [firstBlock, capacity())
+	* 
+	* @tparam Erase If true, the bits of res outside [firstBit, lastBit] are set to 0
+	* @param firstBlock Starting block index (inclusive)
+	* @param lastBlock Ending block index (inclusive), -1 means until the end of the bitset
+	* @param lhs The left-hand side bitset
+	* @param rhs The right-hand side bitset
+	* @param res The destination bitset where the result is stored
+	* @return Reference to the resulting bitstring res
+	* 
+	* @note The capacity of lhs and rhs must be the same
+	* @note The capacity of res must be at least the same as lhs and rhs
+	* @note GCC does not allow default template parameters in friend functions
+	*/
 	template<bool Erase>
 	friend BitSet&  AND_block	(int firstBlock, int lastBlock, const BitSet& lhs, const BitSet& rhs,  BitSet& res);
 	
@@ -91,7 +120,7 @@ public:
 	* @brief AND between lhs and rhs bitsets in the closed block-range [firstBlock, lastBlock]. 
 	*		 If lastBock==-1, the range is the full bitset. The bits outside the range are set to 0.
 	* @returns the new resulting bitset
-	**/	
+	**/
 	friend BitSet AND_block		(int firstBlock, int lastBlock, 
 										BitSet lhs, const BitSet& rhs		)					{ return lhs.AND_EQUAL_block<true>(firstBlock, lastBlock, rhs);}
 

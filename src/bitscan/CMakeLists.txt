@@ -13,6 +13,8 @@ set(useful_headers_for_IDE
  ${CMAKE_CURRENT_SOURCE_DIR}/bbobject.h
  ${CMAKE_CURRENT_SOURCE_DIR}/bbalgorithm.h
  ${CMAKE_CURRENT_SOURCE_DIR}/bitscan.h
+ ${CMAKE_CURRENT_SOURCE_DIR}/mainpage.dox
+ ${CMAKE_CURRENT_SOURCE_DIR}/doxygen_template.h
 )
 
 ###################
@@ -48,6 +50,41 @@ target_include_directories(bitscan PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:${include_install_dir}>    # <prefix>/include/<PROJECT_NAME>
 )
+
+###################
+# DOXYGEN DOCUMENTATION
+###################
+# Look for Doxygen package
+option(BUILD_DOCUMENTATION "Create and install the HTML based API documentation (requires Doxygen)" ON)
+if(BUILD_DOCUMENTATION)
+  find_package(Doxygen)
+  if(DOXYGEN_FOUND)
+    # Set input and output files
+    set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile)
+    set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+
+    # Configure the Doxyfile
+    configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+
+    # Add a custom target for documentation
+    add_custom_target(doc
+      COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+      COMMENT "Generating API documentation with Doxygen"
+      VERBATIM
+    )
+
+    # Install the documentation if requested
+    if(INSTALL_BITGRAPH)
+      install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs/html
+        DESTINATION share/doc/bitscan
+        OPTIONAL
+      )
+    endif()
+  else()
+    message(STATUS "Doxygen not found, documentation will not be built")
+  endif()
+endif()
 
 #############
 # Install BITSCAN lib

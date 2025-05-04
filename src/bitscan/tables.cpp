@@ -1,3 +1,12 @@
+/**
+ * @file tables.cpp
+ * @brief Implementation of the Tables class for the BITSCAN library
+ * @version 1.0
+ * @author Pablo San Segundo
+ * @date 2014
+ * @last_update 2025-02-08
+ */
+
 #include "tables.h"
 
 //common masks and lookup tables always available
@@ -40,6 +49,9 @@ struct Init{
 // magic number tables of 64 bits (always available since space requierement is trivial)
 
 //8BYTES
+/**
+ * @brief Magic number table for 64-bit perfect hashing
+ */
 const int Tables::T_64[67]={	
 	-1,0,1,39,2,15,40,23,			
 	3,12,16,59,41,19,24,54,
@@ -52,6 +64,9 @@ const int Tables::T_64[67]={
 	6,34,33						};
 
 //4BYTES (for 32 bits: present not used)
+/**
+ * @brief Magic number table for 32-bit perfect hashing (currently not used)
+ */
 const int Tables::T_32[37]={	
 	-1,0,1,26,2,23,27,-1,			
 	3,16,24,30,28,11,-1,13,
@@ -60,6 +75,9 @@ const int Tables::T_32[37]={
 	5,20,8,19,18				};	
 
 //De Bruijn Magic number 
+/**
+ * @brief De Bruijn sequence for isolation method (b&(-b))
+ */
 const int Tables::indexDeBruijn64_ISOL[64] = {								
 	63,  0, 58,  1, 59, 47, 53,  2,
 	60, 39, 48, 27, 54, 33, 42,  3,
@@ -84,6 +102,10 @@ const int Tables::indexDeBruijn64_ISOL[64] = {
 
 /////////////////////////////////////
 
+/**
+ * @brief Initializes bit mask tables
+ * @details Creates various masks for bit manipulation operations
+ */
 void Tables::init_masks(){
 
 	BITBOARD uno = 1;
@@ -137,7 +159,7 @@ void Tables::init_masks(){
 	}
 
 	/////////////////////////////
-	//máscara de 0s
+	//mï¿½scara de 0s
 	
 	mask0_1W= ONE <<16;
 	mask0_2W= (mask0_1W<<16) | (~mask0_1W);
@@ -148,6 +170,10 @@ void Tables::init_masks(){
 /////////////////////////////////
 // Inicio Tabla PopCount (poblacion 8 bits)
 
+/**
+ * @brief Initializes 8-bit population count table
+ * @details Computes the number of 1-bits in each 8-bit value
+ */
 void Tables::init_popc8(){
 	int n;
 	int c;
@@ -168,6 +194,10 @@ void Tables::init_popc8(){
 /////////////////////////////////
 // Table begin PopCount (16 bits population)
 
+/**
+ * @brief Initializes 16-bit population count tables
+ * @details Computes the number of 1-bits in each 16-bit value using two methods
+ */
 void Tables::init_popc(){
 ////////////////////
 //

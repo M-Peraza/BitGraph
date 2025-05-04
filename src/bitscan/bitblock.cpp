@@ -1,7 +1,11 @@
 /**
-* @file bitboard.cpp
-* @brief Implementation of the BitBoard class 
-**/
+ * @file bitblock.cpp
+ * @brief Implementation of bitblock operations for the BITSCAN library
+ * @details This file implements optimized functions for manipulating 64-bit bitblocks
+ * @author pss
+ * @date Created prior to 2023
+ * @date Last updated: 30/01/2025 (refactored, added trimming functions, improved Doxygen tags)
+ **/
 
 #include "bitblock.h"
 #include <iostream>
@@ -11,6 +15,11 @@ using namespace std;
 
 namespace bblock {
 
+	/**
+	 * Implementation of popc64_lup function
+	 * Uses a lookup table to count set bits by breaking the 64-bit value
+	 * into four 16-bit chunks and summing the population counts
+	 */
 	int popc64_lup(const BITBOARD bb_dato) {
 
 		register union x {
@@ -20,10 +29,15 @@ namespace bblock {
 
 		val.b = bb_dato;
 
-		return (Tables::pc[val.c[0]] + Tables::pc[val.c[1]] + Tables::pc[val.c[2]] + Tables::pc[val.c[3]]); //Suma de poblaciones 
+		return (Tables::pc[val.c[0]] + Tables::pc[val.c[1]] + Tables::pc[val.c[2]] + Tables::pc[val.c[3]]); //Sum of populations 
 	}
 
 
+	/**
+	 * Implementation of lsb64_lup function
+	 * Uses a lookup table to find the least significant bit
+	 * by checking each 16-bit chunk of the 64-bit value
+	 */
 	int lsb64_lup(const BITBOARD bb) {
 		U16 bb16;
 
@@ -42,6 +56,11 @@ namespace bblock {
 	}
 
 
+	/**
+	 * Implementation of lsb64_pc function
+	 * Uses population count to find the least significant bit
+	 * by isolating the LSB and counting bits before it
+	 */
 	int  lsb64_pc(const BITBOARD bb_dato) {
 
 		if (bb_dato) {
@@ -51,6 +70,10 @@ namespace bblock {
 	}
 
 
+	/**
+	 * Implementation of lsb64_mod function
+	 * Uses perfect hashing with modulo 67 to find the least significant bit
+	 */
 	int lsb64_mod(const BITBOARD bb_dato) {
 
 		if (bb_dato) {
@@ -60,6 +83,11 @@ namespace bblock {
 		return EMPTY_ELEM;
 	}
 
+	/**
+	 * Implementation of lsb64_lup_eff function
+	 * More efficient implementation of lookup-based LSB detection
+	 * with direct chunk comparison
+	 */
 	int  lsb64_lup_eff(const BITBOARD bb_dato) {
 
 
@@ -83,25 +111,27 @@ namespace bblock {
 		return EMPTY_ELEM;		//Should not reach
 	}
 
-	//////////////////////////////
-	//
-	// PopCount
-	//
-	////////////////////////////
+    //////////////////////////////
+    //
+    // PopCount
+    //
 
+	
+	/**
+	 * Implementation of popc64_lup_1 function
+	 * Alternative lookup table population count with direct bit shifting
+	 * instead of using a union
+	 */
 	int popc64_lup_1(const BITBOARD bb_dato) {
 		return (Tables::pc[(U16)bb_dato] + Tables::pc[(U16)(bb_dato >> 16)] +
 			Tables::pc[(U16)(bb_dato >> 32)] + Tables::pc[(U16)(bb_dato >> 48)]);
 	}
 
-	/////////////////////
-	// 
-	// MSB_64 (...)
-	//
-	// Comment:  No bit shuffling implememation seems close to LOOK UP for MSB(64 bits)
-	//
-	////////////////////////
-
+	/**
+	 * Implementation of msb64_lup function
+	 * Uses a lookup table to find the most significant bit
+	 * by checking each 16-bit chunk from highest to lowest
+	 */
 	int msb64_lup(const BITBOARD bb) {
 
 		register union x {
@@ -131,9 +161,15 @@ namespace bblock {
 	}
 		
 
-	//////
-	// I/O
-	//////
+    //////
+    // I/O
+
+	
+	/**
+	 * Implementation of print function
+	 * Prints the indices of all set bits in the bitblock
+	 * followed by the total bit count in brackets
+	 */
 	std::ostream& print( BITBOARD bb_data, std::ostream& o, bool endofl)
 	{
 
@@ -161,6 +197,11 @@ namespace bblock {
 
 	}
 
+	/**
+	 * Implementation of copy function
+	 * Copies bits from source to destination in the specified range
+	 * preserving bits outside this range in the destination
+	 */
 	void copy	 (int firstBit, int lastBit, const BITBOARD& source,  BITBOARD& dest)
 	{
 		auto destOri = dest;
@@ -173,6 +214,11 @@ namespace bblock {
 		dest |= destOri & Tables::mask_low[firstBit];
 	}
 
+	/**
+	 * Implementation of copy_high function
+	 * Copies bits from position 'bit' to the end (63) from source to destination
+	 * preserving bits before 'bit' in the destination
+	 */
 	void copy_high (int bit, const BITBOARD& source, BITBOARD& dest)
 	{
 		auto destOri = dest;
@@ -185,6 +231,11 @@ namespace bblock {
 
 	}
 
+	/**
+	 * Implementation of copy_low function
+	 * Copies bits from the beginning (0) to position 'bit' from source to destination
+	 * preserving bits after 'bit' in the destination
+	 */
 	void copy_low(int bit, const BITBOARD& source, BITBOARD& dest)
 	{
 		auto destOri = dest;

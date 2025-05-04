@@ -37,7 +37,7 @@ Here is an example of fast bit scan loop syntax in BITSCAN:
     bitarray bba(100);
     	//...
 	bba.init_scan(bbo::NON_DESTRUCTIVE);
-   	int nBit = BBObject::noBit;;
+   	int nBit = BBObject::noBit;
   	 while( (nBit=bba.next_bit()) != BBObject::noBit ){
    	     //Do something with nBit...
   	}   
@@ -62,5 +62,57 @@ CONFIGURATION PARAMETERS
 The file *bbconfig.h* contains customization parameters. An important parameter is:
 
 1. POPCOUNT_64: Disable in processor architectures which do not support hardware population count assembly instructions. 
+
+DOXYGEN DOCUMENTATION
+-------------------------------
+
+This project uses Doxygen for documentation. The following Doxygen tags are used throughout the codebase:
+
+- `@file`: Name of the file
+- `@brief`: Brief description of the file or function
+- `@details`: Detailed description
+- `@param`: Description of function parameters
+- `@return` or `@returns`: Description of return values
+- `@author`: Author of the file/code
+- `@version`: Version information
+- `@date` or `@created`: Creation date
+- `@last_update`: Last update date
+- `@todo`: Todo items
+- `@see`: References to other related functions/classes
+- `@example`: Example usage
+- `@note`: Important notes
+- `@warning`: Warning information
+
+To generate the documentation:
+
+1. Install Doxygen: https://www.doxygen.nl/download.html
+2. From the project root, run: `doxygen Doxyfile`
+3. The generated documentation will be available in the `docs/` directory
+
+WINDOWS DOCUMENTATION TOOLS
+-------------------------------
+
+For Windows users, we provide several tools to help with documentation:
+
+1. **doxygen_refactor.ps1** - PowerShell script that analyzes your codebase and shows which files need better Doxygen documentation coverage.
+
+   Run in PowerShell: `.\doxygen_refactor.ps1`
+
+2. **doxygen_refactor.bat** - Simple batch file to generate documentation.
+
+   Run in Command Prompt: `doxygen_refactor.bat`
+
+3. **doxygen_gui.ps1** - GUI tool for managing Doxygen documentation.
+
+   Run in PowerShell: `.\doxygen_gui.ps1`
+
+The GUI tool provides a user-friendly interface with buttons to:
+- Create a Doxyfile
+- Generate documentation
+- View documentation
+- Analyze documentation coverage
+- View the documentation template
+
+For the best documentation experience, refer to `doxygen_template.h` which shows examples of properly documented code.
 
 
