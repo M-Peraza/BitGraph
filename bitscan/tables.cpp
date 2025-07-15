@@ -1,6 +1,7 @@
-/**
+/** EJEMPLO
+ *  
  * @file tables.cpp
- * @author your name (you@domain.com)
+ * @author nombre
  * @brief 
  * @version 0.1
  * @date 2025-03-22
