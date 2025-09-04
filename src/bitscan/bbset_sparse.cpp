@@ -389,8 +389,6 @@ BitSetSp& BitSetSp::set_bit (const BitSetSp& rhs){
 	return *this;		
 }
 
-//DUPLICATE - FUNCTION DELETED IN HEADER
-/*
 // NUEVA IMPLEMENTACION
 BitSetSp& BitSetSp::set_bit(int firstBit, int lastBit, const BitSetSp& rhs) {
 	
@@ -463,7 +461,7 @@ BitSetSp& BitSetSp::set_bit(int firstBit, int lastBit, const BitSetSp& rhs) {
 	
 	return *this;
 }
-*/
+
 
 BitSetSp&  BitSetSp::set_block (int firstBlock, int lastBlock, const BitSetSp& rhs){
 			
@@ -592,9 +590,8 @@ BitSetSp&  BitSetSp::set_block (int firstBlock, int lastBlock, const BitSetSp& r
 	return *this;		
 }
 
-//DUPLICATE - FUNCTION DELETED IN HEADER
+// NUEVA IMPLEMENTACION -> Esta borrada en bbset_sparse.h
 /*
-// NUEVA IMPLEMENTACIO
 BitSetSp& BitSetSp::AND_block(int firstBlock, int lastBlock, const BitSetSp& rhs) {
 	
 	///////////////////////////////////////////////////////////////////////////////////
@@ -763,181 +760,6 @@ int BitSetSp::clear_bit (int low, int high){
 return 0;
 }
 
-//DUPLICATE - SECOND OCCURRENCE OF SAME FUNCTION
-/*
-// NUEVA IMPLEMENTACIO
-BitSetSp& BitSetSp::AND_block(int firstBlock, int lastBlock, const BitSetSp& rhs) {
-	
-	///////////////////////////////////////////////////////////////////////////////////
-	assert(firstBlock >= 0 && firstBlock <= lastBlock && lastBlock < rhs.capacity());
-	///////////////////////////////////////////////////////////////////////////////////
-	
-	auto posL = BBObject::noBit;
-	auto posR = BBObject::noBit;
-	auto itL = this->find_block(firstBlock, posL);
-	auto itR = rhs.find_block(firstBlock, posR);
-	
-	// Process blocks in the range
-	while (itL != vBB_.end() && itL->idx_ <= lastBlock) {
-		
-		if (itR != rhs.vBB_.end() && itR->idx_ == itL->idx_ && itR->idx_ <= lastBlock) {
-			// Both blocks exist - AND them
-			itL->bb_ &= itR->bb_;
-			++itL;
-			++itR;
-		}
-		else if (itR == rhs.vBB_.end() || itR->idx_ > itL->idx_ || itR->idx_ > lastBlock) {
-			// Block exists in *this but not in rhs - set to zero
-			itL->bb_ = 0;
-			++itL;
-		}
-		else {
-			// Block exists in rhs but not in *this - advance rhs
-			++itR;
-		}
-	}
-	
-	return *this;
-}
-*/
-
-//DUPLICATE - SECOND OCCURRENCE OF SAME FUNCTION
-/*
-// NUEVA IMPLEMENTACION
-BitSetSp& BitSetSp::flip() {
-	// Flipping a sparse bitset requires converting to dense representation. This is expensive but necessary for NOT operation
-	
-	// Lo necesitamos para crear un set de indices de blocks para buscar(me ha dado mejor resultado que otras implementaciones)
-	std::unordered_set<int> existing_blocks;
-	for (const auto& block : vBB_) {
-		existing_blocks.insert(block.idx_);
-	}
-	
-	// Create new vector with flipped blocks
-	vPB new_blocks;
-	new_blocks.reserve(nBB_);
-	
-	// Process all possible blocks
-	for (int i = 0; i < nBB_; ++i) {
-		auto it = existing_blocks.find(i);
-		
-		if (it != existing_blocks.end()) {
-			// Block exists - find it and flip its bits
-			auto block_it = std::find_if(vBB_.begin(), vBB_.end(),
-			                             [i](const pBlock_t& b) { return b.idx_ == i; });
-			if (block_it != vBB_.end()) {
-				BITBOARD flipped = ~block_it->bb_;
-				if (flipped != 0) {  // Only store non-zero blocks
-					new_blocks.emplace_back(i, flipped);
-				}
-			}
-		}
-		else {
-			// Block doesn't exist - create it with all bits set
-			new_blocks.emplace_back(i, bitgraph::constants::ALL_ONES);
-		}
-	}
-	
-	// Replace old blocks with new flipped blocks
-	vBB_ = std::move(new_blocks);
-	
-	return *this;
-}
-*/
-
-//DUPLICATE - SECOND OCCURRENCE OF SAME FUNCTION
-/*
-int BitSetSp::clear_bit (int low, int high){
-	
-	int bbl = EMPTY_ELEM, bbh = EMPTY_ELEM; 
-	pair<bool, BitSetSp::vPB_it> pl;
-	pair<bool, BitSetSp::vPB_it> ph;
-
-////////////////////////
-//special cases
-	if(high == EMPTY_ELEM && low == EMPTY_ELEM){
-		vBB_.clear();
-		return 0;
-	}
-
-	if(high == EMPTY_ELEM){
-		bbl=WDIV(low);
-		pl = find_block_ext(bbl);
-		if(pl.second==vBB_.end()) return 0;
-
-		if(pl.first){	//lower block exists
-			pl.second->bb_&=Tables::mask_low[low-WMUL(bbl)];
-			++pl.second;
-		}
-
-		//remaining
-		vBB_.erase(pl.second, vBB_.end());
-		return 0;
-	}else if(low == EMPTY_ELEM){
-		bbh=WDIV(high); 
-		ph=find_block_ext(bbh);
-		if(ph.first){	//upper block exists
-			ph.second->bb_&=Tables::mask_high[high-WMUL(bbh)];
-		}
-
-		//remaining
-		vBB_.erase(vBB_.begin(), ph.second);
-		return 0;
-	}
-
-////////////////
-// general cases
-
-	//check consistency
-	if(low>high){
-		cerr<<"Error in set bit in range"<<endl;
-		return -1;
-	}
-		
-
-	bbl=WDIV(low);
-	bbh=WDIV(high); 
-	pl=find_block_ext(bbl);
-	ph=find_block_ext(bbh);	
-
-
-	//tratamiento
-	if(pl.second!=vBB_.end()){
-		//updates lower bitblock
-		if(pl.first){	//lower block exists
-			if(bbh==bbl){		//case update in the same bitblock
-				BITBOARD bb_low=pl.second->bb_ & Tables::mask_high[high-WMUL(bbh)];
-				BITBOARD bb_high=pl.second->bb_ &Tables::mask_low[low-WMUL(bbl)];
-				pl.second->bb_=bb_low | bb_high;
-				return 0;
-			}
-
-			//update lower block
-			pl.second->bb_&=Tables::mask_low[low-WMUL(bbl)];
-			++pl.second;
-		}
-
-		//updates upper bitblock
-		if(ph.first){	//lower block exists
-			if(bbh==bbl){		//case update in the same bitblock
-				BITBOARD bb_low=pl.second->bb_ & Tables::mask_high[high-WMUL(bbh)];
-				BITBOARD bb_high=pl.second->bb_ &Tables::mask_low[low-WMUL(bbl)];
-				pl.second->bb_=bb_low | bb_high;
-				return 0;
-			}
-
-			//update lower block
-			ph.second->bb_&=Tables::mask_high[high-WMUL(bbh)];
-		}
-
-		//remaining
-		vBB_.erase(pl.second, ph.second);
-	}
-
-	
-return 0;
-}
-*/
 
 BitSetSp&  BitSetSp::erase_bit (const BitSetSp& rhs ){
 
