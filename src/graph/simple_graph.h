@@ -1379,4 +1379,3 @@ namespace bitgraph {
 
 
 
-#endif

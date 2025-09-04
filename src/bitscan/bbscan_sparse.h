@@ -54,10 +54,16 @@ namespace bitgraph {
 			//////////////////////////////
 			//construction / destruction
 
-				//inherit constructors
+			//inherit constructors
 			using BitSetSp::BitSetSp;
 
-			//TODO...check copy and move assignments - should be forbidden
+			//TODO...check copy and move assignments - should be forbidden->Done
+			//OJO si los borramos no pasan algunos tests-> Preguntar a pablo
+			/* Explicitly delete copy and move assignment operators
+			BBScanSp(const BBScanSp&) = delete;
+			BBScanSp& operator=(const BBScanSp&) = delete;
+			BBScanSp(BBScanSp&&) = delete;
+			BBScanSp& operator=(BBScanSp&&) = delete;*/  
 
 			~BBScanSp() = default;
 

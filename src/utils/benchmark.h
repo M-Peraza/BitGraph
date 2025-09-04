@@ -84,4 +84,4 @@ protected:
 	mstri_t					mf_;		//mapping filenames -> value (typically the optimal solution value or a bound)
 };
 
-#endif
+#endif  // __BENCHMARK_H__

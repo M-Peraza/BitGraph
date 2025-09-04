@@ -985,4 +985,162 @@ TEST(BitSetClass, DISABLED_algorithms) {
 	//EXPECT_EQ(bblock::popc64_lup(get_first_k_bits(b8, 3)), 0);
 }
 
+///////////////////////
+// MOVE SEMANTICS TESTS
+// Añadido tests para testear implementacion de move constructor, move assignment y operaciones
+///////////////////////
 
+TEST(BitSetClass, MoveConstructor) {
+	// Test move constructor for BitSet
+	BitSet bb1(200);
+	bb1.set_bit(10);
+	bb1.set_bit(100);
+	bb1.set_bit(150);
+	
+	int original_capacity = bb1.capacity();
+	BITBOARD original_block0 = bb1.block(0);
+	
+	// Move construct bb2 from bb1
+	BitSet bb2(std::move(bb1));
+	
+	// Verify bb2 has the correct data
+	EXPECT_EQ(original_capacity, bb2.capacity());
+	EXPECT_EQ(original_block0, bb2.block(0));
+	EXPECT_TRUE(bb2.is_bit(10));
+	EXPECT_TRUE(bb2.is_bit(100));
+	EXPECT_TRUE(bb2.is_bit(150));
+	EXPECT_EQ(3, bb2.size());
+	
+	// Verify bb1 is in a valid but empty state after move
+	EXPECT_EQ(0, bb1.capacity());
+}
+
+TEST(BitSetClass, MoveAssignment) {
+	// Test move assignment operator for BitSet
+	BitSet bb1(200);
+	bb1.set_bit(10);
+	bb1.set_bit(100);
+	bb1.set_bit(150);
+	
+	BitSet bb2(100);
+	bb2.set_bit(5);
+	
+	int original_capacity = bb1.capacity();
+	
+	// Move assign bb1 to bb2
+	bb2 = std::move(bb1);
+	
+	// Verify bb2 has the correct data
+	EXPECT_EQ(original_capacity, bb2.capacity());
+	EXPECT_TRUE(bb2.is_bit(10));
+	EXPECT_TRUE(bb2.is_bit(100));
+	EXPECT_TRUE(bb2.is_bit(150));
+	EXPECT_FALSE(bb2.is_bit(5));  // Original bit should be gone
+	EXPECT_EQ(3, bb2.size());
+	
+	// Verify bb1 is in a valid but empty state after move
+	EXPECT_EQ(0, bb1.capacity());
+}
+
+TEST(BitSetClass, MoveAwareOperations) {
+	// Test move-aware AND, OR, XOR operations
+	
+	// Test move-aware AND
+	{
+		BitSet bb1(100);
+		bb1.set_bit(10);
+		bb1.set_bit(20);
+		bb1.set_bit(30);
+		
+		BitSet bb2(100);
+		bb2.set_bit(10);
+		bb2.set_bit(30);
+		bb2.set_bit(40);
+		
+		// Move bb1 into AND operation
+		BitSet result = AND(std::move(bb1), bb2);
+		
+		EXPECT_TRUE(result.is_bit(10));
+		EXPECT_FALSE(result.is_bit(20));
+		EXPECT_TRUE(result.is_bit(30));
+		EXPECT_FALSE(result.is_bit(40));
+		EXPECT_EQ(2, result.size());
+	}
+	
+	// Test move-aware OR
+	{
+		BitSet bb1(100);
+		bb1.set_bit(10);
+		bb1.set_bit(20);
+		
+		BitSet bb2(100);
+		bb2.set_bit(20);
+		bb2.set_bit(30);
+		
+		// Move bb1 into OR operation
+		BitSet result = OR(std::move(bb1), bb2);
+		
+		EXPECT_TRUE(result.is_bit(10));
+		EXPECT_TRUE(result.is_bit(20));
+		EXPECT_TRUE(result.is_bit(30));
+		EXPECT_EQ(3, result.size());
+	}
+	
+	// Test move-aware XOR
+	{
+		BitSet bb1(100);
+		bb1.set_bit(10);
+		bb1.set_bit(20);
+		bb1.set_bit(30);
+		
+		BitSet bb2(100);
+		bb2.set_bit(20);
+		bb2.set_bit(30);
+		bb2.set_bit(40);
+		
+		// Move bb1 into XOR operation
+		BitSet result = XOR(std::move(bb1), bb2);
+		
+		EXPECT_TRUE(result.is_bit(10));
+		EXPECT_FALSE(result.is_bit(20));
+		EXPECT_FALSE(result.is_bit(30));
+		EXPECT_TRUE(result.is_bit(40));
+		EXPECT_EQ(2, result.size());
+	}
+	
+	// Test move-aware erase_bit (set difference)
+	{
+		BitSet bb1(100);
+		bb1.set_bit(10);
+		bb1.set_bit(20);
+		bb1.set_bit(30);
+		
+		BitSet bb2(100);
+		bb2.set_bit(20);
+		bb2.set_bit(40);
+		
+		// Move bb1 into erase_bit operation
+		BitSet result = erase_bit(std::move(bb1), bb2);
+		
+		EXPECT_TRUE(result.is_bit(10));
+		EXPECT_FALSE(result.is_bit(20));
+		EXPECT_TRUE(result.is_bit(30));
+		EXPECT_FALSE(result.is_bit(40));
+		EXPECT_EQ(2, result.size());
+	}
+}
+
+TEST(BitSetClass, SelfMoveAssignment) {
+	// Test self-move-assignment protection
+	BitSet bb1(100);
+	bb1.set_bit(10);
+	bb1.set_bit(20);
+	
+	// Self-move-assignment should be safe
+	bb1 = std::move(bb1);
+	
+	// Object should remain unchanged
+	EXPECT_TRUE(bb1.is_bit(10));
+	EXPECT_TRUE(bb1.is_bit(20));
+	EXPECT_EQ(2, bb1.size());
+}

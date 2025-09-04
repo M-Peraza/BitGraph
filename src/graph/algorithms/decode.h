@@ -99,5 +99,6 @@ namespace bitgraph {
 
 }//end of namespace bitgraph
 
+#endif  // __DECODE_ORDERINGS_H__
 
-#endif
+

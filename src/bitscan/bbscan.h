@@ -53,8 +53,27 @@ namespace bitgraph{
 				//inherit constructors	
 			using BitSet::BitSet;
 
-			//TODO...check copy and move assignments 
-
+			//TODO...check copy and move assignments->Done
+			//NUEVA IMPLEMENTACION  
+			BBScan() = default;                      // Explicit default constructor
+			BBScan(const BBScan& other) = default;  // Explicit copy constructor
+			BBScan& operator=(const BBScan& other) = default;  // Explicit copy assignment
+			BBScan(BBScan&& other) noexcept
+				: BitSet(std::move(other)),
+				scan_(other.scan_) {
+				// Reset moved from object's scan state
+				other.scan_ = scan_t{};
+			}
+			//NUEVA IMPLEMENTACION
+			BBScan& operator=(BBScan&& other) noexcept {
+				if (this != &other) {
+					BitSet::operator=(std::move(other));
+					scan_ = other.scan_;
+					// Reset moved from object's scan state
+					other.scan_ = scan_t{};
+				}
+				return *this;
+			}
 			~BBScan() = default;
 
 			///////////////////////////////
@@ -498,7 +517,7 @@ namespace bitgraph {
 			break;
 		case NON_DESTRUCTIVE_REVERSE:
 			scan_block(nBB_ - 1);
-			scan_bit(WORD_SIZE);		//mask_low[WORD_SIZE] = ONE
+			scan_bit(WORD_SIZE);		//mask_low[WORD_SIZE] = bitgraph::constants::ALL_ONES
 			break;
 		case DESTRUCTIVE:
 			scan_block(0);

@@ -321,4 +321,105 @@ TEST_F(BBScanClassTest_1, miscellanous){
 	EXPECT_EQ(bbalg::to_vector(bbn), bbalg::to_vector(bbsc));
 }
 
+///////////////////////
+// MOVE SEMANTICS TESTS FOR BBScan
+// Añado estos tests ya que no he encontrado ningun test que cubra el move contructor y el move assignment de BBscan
+///////////////////////
+
+TEST(BBScanClass, MoveConstructor) {
+	// Test move constructor for BBScan
+	BBScan bb1(200);
+	bb1.set_bit(10);
+	bb1.set_bit(100);
+	bb1.set_bit(150);
+	
+	// Set up scan state
+	bb1.init_scan(BBObject::NON_DESTRUCTIVE);
+	int first_bit = bb1.next_bit();
+	EXPECT_EQ(10, first_bit);
+	
+	int original_capacity = bb1.capacity();
+	int original_scan_block = bb1.scan_block();
+	int original_scan_bit = bb1.scan_bit();
+	
+	// Move construct bb2 from bb1
+	BBScan bb2(std::move(bb1));
+	
+	// Verify bb2 has the correct data
+	EXPECT_EQ(original_capacity, bb2.capacity());
+	EXPECT_TRUE(bb2.is_bit(10));
+	EXPECT_TRUE(bb2.is_bit(100));
+	EXPECT_TRUE(bb2.is_bit(150));
+	EXPECT_EQ(3, bb2.size());
+	
+	// Verify scan state was transferred
+	EXPECT_EQ(original_scan_block, bb2.scan_block());
+	EXPECT_EQ(original_scan_bit, bb2.scan_bit());
+	
+	// Continue scanning should work
+	int next_bit = bb2.next_bit();
+	EXPECT_EQ(100, next_bit);
+	
+	// Verify bb1 is in a valid but empty state after move
+	EXPECT_EQ(0, bb1.capacity());
+}
+
+TEST(BBScanClass, MoveAssignment) {
+	// Test move assignment operator for BBScan
+	BBScan bb1(200);
+	bb1.set_bit(10);
+	bb1.set_bit(100);
+	bb1.set_bit(150);
+	
+	// Set up scan state
+	bb1.init_scan(BBObject::NON_DESTRUCTIVE);
+	bb1.next_bit(); // advance to bit 10
+	
+	BBScan bb2(100);
+	bb2.set_bit(5);
+	
+	int original_capacity = bb1.capacity();
+	
+	// Move assign bb1 to bb2
+	bb2 = std::move(bb1);
+	
+	// Verify bb2 has the correct data
+	EXPECT_EQ(original_capacity, bb2.capacity());
+	EXPECT_TRUE(bb2.is_bit(10));
+	EXPECT_TRUE(bb2.is_bit(100));
+	EXPECT_TRUE(bb2.is_bit(150));
+	EXPECT_FALSE(bb2.is_bit(5));  // Original bit should be gone
+	EXPECT_EQ(3, bb2.size());
+	
+	// Continue scanning should work
+	int next_bit = bb2.next_bit();
+	EXPECT_EQ(100, next_bit);
+	
+	// Verify bb1 is in a valid but empty state after move
+	EXPECT_EQ(0, bb1.capacity());
+}
+
+TEST(BBScanClass, SelfMoveAssignment) {
+	// Test self-move-assignment protection
+	BBScan bb1(100);
+	bb1.set_bit(10);
+	bb1.set_bit(20);
+	
+	// Set up scan state
+	bb1.init_scan(BBObject::NON_DESTRUCTIVE);
+	int first_bit = bb1.next_bit();
+	EXPECT_EQ(10, first_bit);
+	
+	// Self-move-assignment should be safe
+	bb1 = std::move(bb1);
+	
+	// Object should remain unchanged
+	EXPECT_TRUE(bb1.is_bit(10));
+	EXPECT_TRUE(bb1.is_bit(20));
+	EXPECT_EQ(2, bb1.size());
+	
+	// Scan state should be preserved
+	int next_bit = bb1.next_bit();
+	EXPECT_EQ(20, next_bit);
+}
 

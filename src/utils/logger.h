@@ -205,8 +205,5 @@ void _Error2(T&&... args) {
 #define Logy(...) _Silent(__VA_ARGS__)
 #define LOGY(...) _Silent2(__VA_ARGS__)
 
+#endif  // __LOGY_H__
 
-
-
-
-#endif

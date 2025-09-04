@@ -1277,4 +1277,3 @@ namespace bitgraph {
 }//end namespace bitgraph
 
 
-#endif

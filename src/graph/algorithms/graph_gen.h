@@ -537,4 +537,3 @@ namespace bitgraph{
 
 
 
-#endif

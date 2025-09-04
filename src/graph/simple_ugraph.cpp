@@ -98,7 +98,7 @@ int Ugraph<T>::degree(int v, const BitSet& bbn) const {
 
 	int ndeg = 0;
 	for (int i = 0; i < ptype::NBB_; i++) {
-		ndeg += bblock::popc64(ptype::adj_[v].block(i) & bbn.block(i));
+		ndeg += bitscan::bblock::popc64(ptype::adj_[v].block(i) & bbn.block(i));
 	}
 
 	return ndeg;
@@ -296,11 +296,11 @@ int Ugraph<T>::degree_up (int v, const BitSet& bbn) const	{
 	int nDeg = 0, nBB = WDIV(v);
 
 	for (auto i = nBB + 1; i < ptype::NBB_; ++i) {
-		nDeg += bblock::popc64( ptype::adj_[v].block(i) & bbn.block(i) );
+		nDeg += bitscan::bblock::popc64( ptype::adj_[v].block(i) & bbn.block(i) );
 	}
 
 	//truncate the bitblock of v
-	nDeg += bblock::popc64 ( bblock::MASK_1( WMOD(v) + 1, 63 ) &
+	nDeg += bitscan::bblock::popc64 ( bitscan::bblock::MASK_1( WMOD(v) + 1, 63 ) &
 							   ptype::adj_[v].block(nBB) & bbn.block(nBB)	
 							 );
 	
@@ -313,11 +313,11 @@ int Ugraph<T>::degree_up(int v) const
 	int nDeg = 0, nBB = WDIV(v);
 
 	for (auto i = nBB + 1; i < ptype::NBB_; ++i) {
-		nDeg += bblock::popc64( ptype::adj_[v].block(i) );
+		nDeg += bitscan::bblock::popc64( ptype::adj_[v].block(i) );
 	}
 
 	//truncate the bitblock of v
-	nDeg += bblock::popc64( bblock::MASK_1(WMOD(v) + 1, 63) &
+	nDeg += bitscan::bblock::popc64( bitscan::bblock::MASK_1(WMOD(v) + 1, 63) &
 							  ptype::adj_[v].block(nBB)	   );
 
 	return nDeg;
@@ -329,7 +329,7 @@ int Ugraph<T>::degree (int v, int UB, const BitSet& bbn) const	{
 	int nDeg = 0;
 	for(auto i = 0; i < ptype::NBB_; ++i){
 
-		nDeg += bblock::popc64(ptype::adj_[v].block(i) & bbn.block(i));
+		nDeg += bitscan::bblock::popc64(ptype::adj_[v].block(i) & bbn.block(i));
 
 		if (nDeg >= UB) { return UB; }
 	}

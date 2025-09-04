@@ -169,4 +169,3 @@ TEST(TestAnalyser, only_one_test_and_fails){
 	/////////////////////
 	cout << ta << endl;									//reports results 
 	/////////////////////
-}

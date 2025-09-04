@@ -17,7 +17,7 @@
 
 #include "bitscan/bbscan.h"
 #include "bitscan/bbalgorithm.h"			//MIN, MAX
-
+#include <utility>							//std::move
 
 namespace bitgraph {
 	namespace _impl {
@@ -31,6 +31,15 @@ namespace bitgraph {
 			explicit BBSentinel(int popsize) : BBScan(popsize) { init_sentinels(false); }
 			BBSentinel(const BBSentinel& bbN) : BBScan(bbN) { m_BBH = bbN.m_BBH; m_BBL = bbN.m_BBL; }
 			~BBSentinel() {};
+			//NEVA IMPLEMENTACION
+			BBSentinel(BBSentinel&& other) noexcept
+				: BBScan(std::move(other)),
+				m_BBH(other.m_BBH),
+				m_BBL(other.m_BBL) {
+				// Reset moved-from object's sentinels
+				other.m_BBH = EMPTY_ELEM;
+				other.m_BBL = EMPTY_ELEM;
+	}
 
 			////////////
 			// setters / getters
@@ -70,6 +79,18 @@ namespace bitgraph {
 			////////////////
 			// operators
 			BBSentinel& operator=		(const BBSentinel&);
+			// Implementacion del move assignment
+			BBSentinel& operator=		(BBSentinel&& other) noexcept {
+				if (this != &other) {
+					BBScan::operator=(std::move(other));
+					m_BBH = other.m_BBH;
+					m_BBL = other.m_BBL;
+					// Reset moved-from object's sentinels
+					other.m_BBH = EMPTY_ELEM;
+					other.m_BBL = EMPTY_ELEM;
+				}
+				return *this;
+	}
 			BBSentinel& operator&=		(const BitSet&);
 
 			//////////////
@@ -113,6 +134,7 @@ namespace bitgraph {
 
 	inline int BBSentinel::popcn64() const {
 		BITBOARD pc = 0;
+		//STL
 		for (int i = m_BBL; i <= m_BBH; i++) {
 			pc += __popcnt64(vBB_[i]);
 		}

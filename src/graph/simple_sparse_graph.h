@@ -168,4 +168,3 @@ void GSS::write_dimacs(ostream& o) {
 
 
 
-#endif

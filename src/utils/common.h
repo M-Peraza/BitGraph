@@ -719,6 +719,7 @@ namespace bitgraph {
 
 }//end namespace bitgraph
 
+#endif  // __COMMON_H__
 
 
-#endif
+

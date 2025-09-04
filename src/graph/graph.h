@@ -48,4 +48,3 @@ namespace bitgraph {
 	using ugraph_ewi = bitgraph::Graph_EW<ugraph, int>;				//simple edge weighted graph with int weights
 }
 
-#endif

@@ -895,3 +895,168 @@ TEST(Sparse, DISABLED_clear_bits) {
 //	bbsp.erase_block_pos(3,bberase);
 //	EXPECT_FALSE(bbsp.is_bit(9000));
 //}
+
+///////////////////////
+// MOVE SEMANTICS TESTS FOR SPARSE BITSETS
+// Testing move constructors, move assignment operators, and move-aware operations
+///////////////////////
+
+TEST(Sparse, MoveConstructor) {
+	// Test move constructor for BitSetSp
+	BitSetSp bb1(10000);
+	bb1.set_bit(100);
+	bb1.set_bit(1000);
+	bb1.set_bit(5000);
+	bb1.set_bit(9999);
+	
+	int original_capacity = bb1.capacity();
+	int original_blocks = bb1.number_of_blocks();
+	
+	// Move construct bb2 from bb1
+	BitSetSp bb2(std::move(bb1));
+	
+	// Verify bb2 has the correct data
+	EXPECT_EQ(original_capacity, bb2.capacity());
+	EXPECT_EQ(original_blocks, bb2.number_of_blocks());
+	EXPECT_TRUE(bb2.is_bit(100));
+	EXPECT_TRUE(bb2.is_bit(1000));
+	EXPECT_TRUE(bb2.is_bit(5000));
+	EXPECT_TRUE(bb2.is_bit(9999));
+	EXPECT_EQ(4, bb2.size());
+	
+	// Verify bb1 is in a valid but empty state after move
+	EXPECT_EQ(0, bb1.capacity());
+	EXPECT_EQ(0, bb1.number_of_blocks());
+}
+
+TEST(Sparse, MoveAssignment) {
+	// Test move assignment operator for BitSetSp
+	BitSetSp bb1(10000);
+	bb1.set_bit(100);
+	bb1.set_bit(1000);
+	bb1.set_bit(5000);
+	
+	BitSetSp bb2(5000);
+	bb2.set_bit(50);
+	
+	int original_capacity = bb1.capacity();
+	
+	// Move assign bb1 to bb2
+	bb2 = std::move(bb1);
+	
+	// Verify bb2 has the correct data
+	EXPECT_EQ(original_capacity, bb2.capacity());
+	EXPECT_TRUE(bb2.is_bit(100));
+	EXPECT_TRUE(bb2.is_bit(1000));
+	EXPECT_TRUE(bb2.is_bit(5000));
+	EXPECT_FALSE(bb2.is_bit(50));  // Original bit should be gone
+	EXPECT_EQ(3, bb2.size());
+	
+	// Verify bb1 is in a valid but empty state after move
+	EXPECT_EQ(0, bb1.capacity());
+	EXPECT_EQ(0, bb1.number_of_blocks());
+}
+
+TEST(Sparse, MoveAwareOperations) {
+	// Test move-aware AND, OR, XOR, erase_bit operations
+	
+	// Test move-aware AND
+	{
+		BitSetSp bb1(1000);
+		bb1.set_bit(10);
+		bb1.set_bit(100);
+		bb1.set_bit(500);
+		
+		BitSetSp bb2(1000);
+		bb2.set_bit(10);
+		bb2.set_bit(500);
+		bb2.set_bit(800);
+		
+		// Move bb1 into AND operation
+		BitSetSp result = AND(std::move(bb1), bb2);
+		
+		EXPECT_TRUE(result.is_bit(10));
+		EXPECT_FALSE(result.is_bit(100));
+		EXPECT_TRUE(result.is_bit(500));
+		EXPECT_FALSE(result.is_bit(800));
+		EXPECT_EQ(2, result.size());
+	}
+	
+	// Test move-aware OR
+	{
+		BitSetSp bb1(1000);
+		bb1.set_bit(10);
+		bb1.set_bit(100);
+		
+		BitSetSp bb2(1000);
+		bb2.set_bit(100);
+		bb2.set_bit(500);
+		
+		// Move bb1 into OR operation
+		BitSetSp result = OR(std::move(bb1), bb2);
+		
+		EXPECT_TRUE(result.is_bit(10));
+		EXPECT_TRUE(result.is_bit(100));
+		EXPECT_TRUE(result.is_bit(500));
+		EXPECT_EQ(3, result.size());
+	}
+	
+	// Test move-aware XOR
+	{
+		BitSetSp bb1(1000);
+		bb1.set_bit(10);
+		bb1.set_bit(100);
+		bb1.set_bit(500);
+		
+		BitSetSp bb2(1000);
+		bb2.set_bit(100);
+		bb2.set_bit(500);
+		bb2.set_bit(800);
+		
+		// Move bb1 into XOR operation
+		BitSetSp result = XOR(std::move(bb1), bb2);
+		
+		EXPECT_TRUE(result.is_bit(10));
+		EXPECT_FALSE(result.is_bit(100));
+		EXPECT_FALSE(result.is_bit(500));
+		EXPECT_TRUE(result.is_bit(800));
+		EXPECT_EQ(2, result.size());
+	}
+	
+	// Test move-aware erase_bit (set difference)
+	{
+		BitSetSp bb1(1000);
+		bb1.set_bit(10);
+		bb1.set_bit(100);
+		bb1.set_bit(500);
+		
+		BitSetSp bb2(1000);
+		bb2.set_bit(100);
+		bb2.set_bit(800);
+		
+		// Move bb1 into erase_bit operation
+		BitSetSp result = erase_bit(std::move(bb1), bb2);
+		
+		EXPECT_TRUE(result.is_bit(10));
+		EXPECT_FALSE(result.is_bit(100));
+		EXPECT_TRUE(result.is_bit(500));
+		EXPECT_FALSE(result.is_bit(800));
+		EXPECT_EQ(2, result.size());
+	}
+}
+
+TEST(Sparse, SelfMoveAssignment) {
+	// Test self-move-assignment protection
+	BitSetSp bb1(1000);
+	bb1.set_bit(100);
+	bb1.set_bit(500);
+	
+	// Self-move-assignment should be safe
+	bb1 = std::move(bb1);
+	
+	// Object should remain unchanged
+	EXPECT_TRUE(bb1.is_bit(100));
+	EXPECT_TRUE(bb1.is_bit(500));
+	EXPECT_EQ(2, bb1.size());
+	EXPECT_EQ(1000/64 + 1, bb1.capacity());  // Capacity should be preserved
+}

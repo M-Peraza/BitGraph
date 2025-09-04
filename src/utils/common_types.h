@@ -152,7 +152,7 @@ namespace bitgraph {
 			// data members
 
 			std::size_t nE_;								//number of elements, used as internal index
-			T* stack_;										//underlying C-array (TODO - raw pointer ¿change to a std::vector?)		
+			T* stack_;										//underlying C-array (TODO - raw pointer ï¿½change to a std::vector?)		
 #ifdef DEBUG_STACKS
 			int MAX_;										//maximum number of elements	
 #endif
@@ -245,5 +245,6 @@ namespace bitgraph {
 	using com::operator<<;
 }
 
+#endif  // __COMMON_TYPES_H__
 
-#endif
+

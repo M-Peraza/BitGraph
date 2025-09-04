@@ -121,6 +121,7 @@ namespace bitgraph {
 		
 	using gio::dimacs::graph_to_dimacs;
 
-}//end namescape bitgraph	
+}//end namescape bitgraph
 
-#endif
+#endif	
+

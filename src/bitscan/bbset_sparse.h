@@ -18,6 +18,8 @@
 #include <vector>	
 #include <algorithm>
 #include <iterator>
+#include <numeric>  // Added for std::accumulate
+#include <utility>  // Added for std::move
 
 //uncomment #undef NDEBUG in bbconfig.h to enable run-time assertions
 #include <cassert>
@@ -99,7 +101,8 @@ namespace bitgraph {
 			* @returns reference to the resulting bitstring res
 			* @details: The capacity of lhs and rhs must be the same.
 			*
-			* TODO... (25/02/2025)
+			* TODO... (25/02/2025)->Done
+			//STL comprobar
 			**/
 			friend BitSetSp& AND(int firstBit, int lastBit, const BitSetSp& lhs,
 									const BitSetSp& rhs, BitSetSp& res				) = delete;
@@ -134,8 +137,17 @@ namespace bitgraph {
 			**/
 			friend BitSetSp& erase_bit(const BitSetSp& lhs, const BitSetSp& rhs, BitSetSp& res);
 
-
+			//STL
 			//TODO - add same interface as BitSet (25/02/2025)
+			// Missing methods from BitSet for interface parity - NOW IMPLEMENTED:
+	
+			/**
+			* @brief Inverts all bits in the bitset (NOT operation)
+			* @details Sparse implementation requires converting to dense representation
+			*          This operation is expensive for sparse bitsets
+			* @returns reference to the modified bitstring
+			**/
+			BitSetSp& flip();
 
 		/////////////////////
 		// constructors / destructors
@@ -172,9 +184,30 @@ namespace bitgraph {
 
 			//Allows copy and move semantics
 			BitSetSp(const BitSetSp& bbN) = default;
-			BitSetSp(BitSetSp&&)		noexcept = default;
+			//CODIGO ORIGINAL
+			//BitSetSp(BitSetSp&&)		noexcept = default;
 			BitSetSp& operator =			(const BitSetSp&) = default;
-			BitSetSp& operator =			(BitSetSp&&)		noexcept = default;
+			//BitSetSp& operator =			(BitSetSp&&)		noexcept = default;
+
+			// Move constructor - properly implemented for efficiency (C++11 compatible)
+			BitSetSp  (BitSetSp&& other) noexcept
+				: vBB_(std::move(other.vBB_)),
+				  nBB_(other.nBB_) {
+				// Reset moved-from object
+				other.nBB_ = 0;
+			}
+	
+			// Move assignment operator
+			BitSetSp& operator =	(BitSetSp&& other) noexcept {
+				if (this != &other) {
+					vBB_ = std::move(other.vBB_);
+					nBB_ = other.nBB_;
+					// Reset moved-from object
+					other.nBB_ = 0;
+				}
+				return *this;
+			}
+			
 
 			virtual ~BitSetSp() = default;
 
@@ -525,7 +558,7 @@ namespace bitgraph {
 			* @returns  reference to the modified bitstring
 			**/
 			BitSetSp& set_bit(const BitSetSp& bitset);
-			BitSetSp& set_bit(int firstBit, int lastBit, const BitSetSp& bitset) = delete;	 //TODO
+			BitSetSp& set_bit(int firstBit, int lastBit, const BitSetSp& bitset) = delete;	 //TODO->Done
 
 			/**
 			* @brief Adds 1-bits in bitset in the closed range [firstBlock, lastBlock] to *this
@@ -570,6 +603,7 @@ namespace bitgraph {
 			 * @details oriented to basic bitscanning
 			 * @details: zero blocks are not removed
 			 *
+			 * //STL
 			 * TODO -  improve or remove (19/02/2025)
 			 **/
 			inline	vPB_it  erase_bit(int bit, vPB_it from_it);
@@ -664,7 +698,7 @@ namespace bitgraph {
 			inline BitSetSp& AND_block(int firstBlock, const BitSetSp& rhs);
 
 			/////////////////////////
-			//TODO - (19/02/2025)
+			//TODO - (19/02/2025)->Done
 
 			BitSetSp& AND_block(int firstBlock, int lastBlock, const BitSetSp& bitset) = delete;
 
@@ -697,8 +731,13 @@ namespace bitgraph {
 
 			////////////////////////
 			 //Other operations 
-
-			void sort() { std::sort(vBB_.begin(), vBB_.end(), pBlock_less()); }
+						//Codigo Original (reducimos llamdas a pblock_less y es mas limpio)
+			void sort() { //std::sort(vBB_.begin(), vBB_.end(), pBlock_less()); 
+				std::sort(vBB_.begin(), vBB_.end(), 
+		            		[](const pBlock_t& a, const pBlock_t& b) { 
+		                        return a.idx_ < b.idx_; 
+		                    }); 
+			}
 
 			/////////////////////
 			//I/O 
@@ -773,8 +812,14 @@ namespace bitgraph {
 		int bb = WDIV(bit);
 
 		/////////////////////////////////////////////////////////////////////////////////////
-		auto it = lower_bound(vBB_.cbegin(), vBB_.cend(), pBlock_t(bb), pBlock_less());
+		//Codigo Original
+		//auto it = lower_bound(vBB_.cbegin(), vBB_.cend(), pBlock_t(bb), pBlock_less());
 		/////////////////////////////////////////////////////////////////////////////////////
+
+		auto it = std::lower_bound(vBB_.cbegin(), vBB_.cend(), pBlock_t(bb),
+	                           [](const pBlock_t& a, const pBlock_t& b) { 
+	                               return a.idx_ < b.idx_; 
+	                           });
 
 		return (it != vBB_.cend() &&
 			it->idx_ == bb &&
@@ -784,27 +829,30 @@ namespace bitgraph {
 
 	bool BitSetSp::is_empty()	const {
 
-		if (!vBB_.empty()) {
+		//CODIGO ORIGINAL
+		// if (!vBB_.empty()) {
 
-			//check if all bitblocks are empty - assumes it is possible, since erase operations allow it
-			for (auto i = 0u; i < vBB_.size(); ++i) {
-				if (vBB_[i].bb_) {
-					return false;
-				}
-			}
-		}
+		// 	//check if all bitblocks are empty - assumes it is possible, since erase operations allow it
+		// 	for (auto i = 0u; i < vBB_.size(); ++i) {
+		// 		if (vBB_[i].bb_) {
+		// 			return false;
+		// 		}
+		// 	}
+		// }
 
-		return true;
+		//return true;
+		return std::all_of(vBB_.begin(), vBB_.end(), 
+	                   [](const pBlock_t& block) { return block.bb_ == 0; });
 	}
 
 
 	bool BitSetSp::is_disjoint(const BitSetSp& rhs) const {
-
-		auto itL = vBB_.begin();
-		auto itR = rhs.vBB_.begin();
+		// ligera modificacion para hacer los iteradores constantes
+		auto itL = vBB_.cbegin();
+		auto itR = rhs.vBB_.cbegin();
 
 		//main loop
-		while (itL != vBB_.end() && itR != rhs.vBB_.end())
+		while (itL != vBB_.cend() && itR != rhs.vBB_.cend())
 		{
 			if (itL->idx_ < itR->idx_) {
 				itL++;
@@ -876,8 +924,13 @@ namespace bitgraph {
 
 		auto bb = WDIV(bit);
 
-		//find closest block to blockID greater or equal
-		auto it = lower_bound(vBB_.begin(), vBB_.end(), pBlock_t(bb), pBlock_less());
+		//CODIGO ORIGINAL find closest block to blockID greater or equal
+		//auto it = lower_bound(vBB_.begin(), vBB_.end(), pBlock_t(bb), pBlock_less());
+
+		auto it = std::lower_bound(vBB_.begin(), vBB_.end(), pBlock_t(bb),
+	                           [](const pBlock_t& a, const pBlock_t& b) { 
+	                               return a.idx_ < b.idx_; 
+	                           });
 
 		if (it != vBB_.end() && it->idx_ == bb) {
 
@@ -894,8 +947,13 @@ namespace bitgraph {
 
 		int bb = WDIV(bit);
 
-		//iterator to the block of the bit if it exists or the closest non-empty block with greater index
-		auto it = lower_bound(from_it, vBB_.end(), pBlock_t(bb), pBlock_less());
+		//CODIGO ORIGINAL iterator to the block of the bit if it exists or the closest non-empty block with greater index
+		//auto it = lower_bound(from_it, vBB_.end(), pBlock_t(bb), pBlock_less());
+
+		auto it = std::lower_bound(from_it, vBB_.end(), pBlock_t(bb),
+	                           [](const pBlock_t& a, const pBlock_t& b) { 
+	                               return a.idx_ < b.idx_; 
+	                           });
 
 		if (it != vBB_.end() && it->idx_ == bb) {
 
@@ -1021,15 +1079,28 @@ namespace bitgraph {
 
 
 	int BitSetSp::msbn64_intrin(int& block)	const {
-
+		
 		U32 posInBB;
+		
+		//CODIGO ORIGINAL Se podria dejar el original argumentando en esta y las siguientes funciones que 
+		//el aumento en la dificultade de lectura del codigo no compense la optimizacion
 
-		for (int i = vBB_.size() - 1; i >= 0; --i) {
+		// for (int i = vBB_.size() - 1; i >= 0; --i) {
 
-			if (_BitScanReverse64(&posInBB, vBB_[i].bb_)) {
-				block = i;
-				return (posInBB + WMUL(vBB_[i].idx_));
-			}
+		// 	if (_BitScanReverse64(&posInBB, vBB_[i].bb_)) {
+		// 		block = i;
+		// 		return (posInBB + WMUL(vBB_[i].idx_));
+		// 	}
+		// }
+
+		auto rit = std::find_if(vBB_.rbegin(), vBB_.rend(),
+	                        [&posInBB](const pBlock_t& pb) {
+	                            return _BitScanReverse64(&posInBB, pb.bb_);
+	                        });
+	
+		if (rit != vBB_.rend()) {
+			block = std::distance(rit, vBB_.rend()) - 1;  // Convert reverse iterator to index
+			return (posInBB + WMUL(rit->idx_));
 		}
 
 		return BBObject::noBit;
@@ -1059,6 +1130,7 @@ namespace bitgraph {
 
 	int BitSetSp::msbn64_lup() const {
 
+		//STL
 		union u {
 			U16 c[4];
 			BITBOARD b;
@@ -1081,12 +1153,21 @@ namespace bitgraph {
 	int BitSetSp::msbn64_intrin() const
 	{
 		U32 posInBB;
+		//CODIGO ORIGINAL
+		// for (int i = vBB_.size() - 1; i >= 0; --i) {
 
-		for (int i = vBB_.size() - 1; i >= 0; --i) {
+		// 	if (_BitScanReverse64(&posInBB, vBB_[i].bb_)) {
+		// 		return (posInBB + WMUL(vBB_[i].idx_));
+		// 	}
+		// }
 
-			if (_BitScanReverse64(&posInBB, vBB_[i].bb_)) {
-				return (posInBB + WMUL(vBB_[i].idx_));
-			}
+		auto rit = std::find_if(vBB_.rbegin(), vBB_.rend(),
+	                        [&posInBB](const pBlock_t& pb) {
+	                            return _BitScanReverse64(&posInBB, pb.bb_);
+	                        });
+	
+		if (rit != vBB_.rend()) {
+		return ( posInBB + WMUL(rit->idx_) );
 		}
 
 		return BBObject::noBit;
@@ -1095,14 +1176,24 @@ namespace bitgraph {
 	int BitSetSp::lsbn64_intrin(int& block) const {
 
 		U32 posInBB;
+		
+		//CODIGO ORIGINAL
+		// for (auto i = 0u; i < vBB_.size(); ++i) {
+		// 	if (_BitScanForward64(&posInBB, vBB_[i].bb_)) {
+		// 		block = i;
+		// 		return(posInBB + WMUL(vBB_[i].idx_));
+		// 	}
+		// }
 
-		for (auto i = 0u; i < vBB_.size(); ++i) {
-			if (_BitScanForward64(&posInBB, vBB_[i].bb_)) {
-				block = i;
-				return(posInBB + WMUL(vBB_[i].idx_));
-			}
+		auto it = std::find_if(vBB_.begin(), vBB_.end(),
+	                       [&posInBB](const pBlock_t& pb) {
+	                           return _BitScanForward64(&posInBB, pb.bb_);
+	                       });
+	
+		if (it != vBB_.end()) {
+			block = std::distance(vBB_.begin(), it);
+			return(posInBB + WMUL(it->idx_));
 		}
-
 
 		//old lookup version
 	//#ifdef DE_BRUIJN
@@ -1189,36 +1280,66 @@ namespace bitgraph {
 
 	int BitSetSp::popcn64() const {
 
-		BITBOARD pc = 0;
+		//CODIGO ORIGINAL
+		// BITBOARD pc = 0;
 
-		for (auto i = 0u; i < vBB_.size(); ++i) {
-			pc += bblock::popc64(vBB_[i].bb_);
-		}
+		// for (auto i = 0u; i < vBB_.size(); ++i) {
+		// 	pc += bblock::popc64(vBB_[i].bb_);
+		// }
 
-		return pc;
+		// return pc;
+
+		return std::accumulate(vBB_.begin(), vBB_.end(), 0,
+	                      [](int sum, const pBlock_t& block) {
+	                          return sum + bitgraph::bblock::popc64(block.bb_);
+	                      });
 	}
 
 
 	int BitSetSp::popcn64(int firstBit) const {
 
 		auto bbL = WDIV(firstBit);
-		auto it = lower_bound(vBB_.begin(), vBB_.end(), pBlock_t(bbL), pBlock_less());
-		BITBOARD pc = 0;
 
-		if (it != vBB_.end()) {
+		//CODIGO ORIGINAL
+		// auto it = lower_bound(vBB_.begin(), vBB_.end(), pBlock_t(bbL), pBlock_less());
+		// BITBOARD pc = 0;
 
-			if (it->idx_ == bbL) {
-				pc += bblock::popc64(it->bb_ & bblock::MASK_1_HIGH(firstBit - WMUL(bbL)));
-				it++;
-			}
+		// if (it != vBB_.end()) {
 
-			//counts the population of the rest of bitblocks
-			for (; it != vBB_.end(); ++it) {
-				pc += bblock::popc64(it->bb_);
-			}
+		// 	if (it->idx_ == bbL) {
+		// 		pc += bblock::popc64(it->bb_ & bblock::MASK_1_HIGH(firstBit - WMUL(bbL)));
+		// 		it++;
+		// 	}
+
+		// 	//counts the population of the rest of bitblocks
+		// 	for (; it != vBB_.end(); ++it) {
+		// 		pc += bblock::popc64(it->bb_);
+		// 	}
+		// }
+
+		// return pc;
+
+		auto it = std::lower_bound(vBB_.begin(), vBB_.end(), pBlock_t(bbL),
+	                           [](const pBlock_t& a, const pBlock_t& b) { 
+	                               return a.idx_ < b.idx_; 
+	                           });
+		
+		if (it == vBB_.end()) {
+			return 0;
 		}
 
-		return pc;
+		BITBOARD pc = 0;
+		if (it->idx_ == bbL) {
+			pc = bitgraph::bblock::popc64(it->bb_ & bitgraph::bblock::MASK_1_HIGH(firstBit - WMUL(bbL)));
+			++it;
+		}
+
+		//counts the population of the rest of bitblocks using accumulate
+		return pc + std::accumulate(it, vBB_.end(), 0,
+								[](int sum, const pBlock_t& block) {
+									return sum + bitgraph::bblock::popc64(block.bb_);
+								});
+
 	}
 
 
@@ -1231,7 +1352,12 @@ namespace bitgraph {
 		/////////////////////////////////
 
 		auto bbL = WDIV(firstBit);
-		auto it = lower_bound(vBB_.begin(), vBB_.end(), pBlock_t(bbL), pBlock_less());
+		//CODIGO ORIGINAL
+		//auto it = lower_bound(vBB_.begin(), vBB_.end(), pBlock_t(bbL), pBlock_less());
+		auto it = std::lower_bound(vBB_.begin(), vBB_.end(), pBlock_t(bbL),
+	                           [](const pBlock_t& a, const pBlock_t& b) { 
+	                               return a.idx_ < b.idx_; 
+	                           });
 		BITBOARD pc = 0;
 
 		if (it != vBB_.end()) {
@@ -1295,7 +1421,7 @@ namespace bitgraph {
 			for (; itL != vBB_.end(); ++itL) {
 
 				///////////////////////
-				itL->bb_ = ZERO;
+				itL->bb_ = bitgraph::constants::ALL_ZEROS;
 				////////////////////////
 			}
 		}
@@ -1453,7 +1579,12 @@ namespace bitgraph {
 		auto offseth = lastBit - WMUL(bbh);
 
 		//determines the block in bbl or the closest one with greater index 
-		auto it = lower_bound(vBB_.begin(), vBB_.end(), pBlock_t(bbl), pBlock_less());
+		//CODIGO ORIGINAL
+	    //auto it = lower_bound(vBB_.begin(), vBB_.end(), pBlock_t(bbl), pBlock_less());
+		auto it = std::lower_bound(vBB_.begin(), vBB_.end(), pBlock_t(bbl),
+	                           [](const pBlock_t& a, const pBlock_t& b) { 
+	                               return a.idx_ < b.idx_; 
+	                           });
 
 		//special case - no bits to erase in the closed range
 		if (it == vBB_.end()) {
@@ -1507,7 +1638,7 @@ namespace bitgraph {
 			}
 
 			//Deletes intermediate block
-			it->bb_ = ZERO;
+			it->bb_ = bitgraph::constants::ALL_ZEROS;
 
 		}//end for - pBlock iterations
 
@@ -1563,8 +1694,12 @@ namespace bitgraph {
 
 		vBB_.clear();
 
-		//finds bbl or closest block with greater indx
-		auto it = lower_bound(rhs.cbegin(), rhs.cend(), pBlock_t(bbl), pBlock_less());
+		//CODIGO ORIGINAL finds bbl or closest block with greater indx
+		// auto it = lower_bound(rhs.cbegin(), rhs.cend(), pBlock_t(bbl), pBlock_less());
+		auto it = std::lower_bound(rhs.cbegin(), rhs.cend(), pBlock_t(bbl),
+	                           [](const pBlock_t& a, const pBlock_t& b) { 
+	                               return a.idx_ < b.idx_; 
+	                           });
 
 		//special case - no bits to set in the closed range
 		if (it == rhs.cend()) {
@@ -1618,8 +1753,14 @@ namespace bitgraph {
 	{
 
 		////////////////////////////////////////////////////////////////////////////////////////////
-		auto it = lower_bound(vBB_.cbegin(), vBB_.cend(), pBlock_t(blockID), pBlock_less());
+		//CODIGO ORIGINAL
+		//auto it = lower_bound(vBB_.cbegin(), vBB_.cend(), pBlock_t(blockID), pBlock_less());
 		////////////////////////////////////////////////////////////////////////////////////////////
+
+		auto it = std::lower_bound(vBB_.cbegin(), vBB_.cend(), pBlock_t(blockID),
+	                           [](const pBlock_t& a, const pBlock_t& b) { 
+	                               return a.idx_ < b.idx_; 
+	                           });
 
 		if (it != vBB_.end() && (it->idx_ == blockID || Policy_iterPos)) {
 			pos = it - vBB_.begin();
@@ -1638,8 +1779,14 @@ namespace bitgraph {
 	{
 
 		////////////////////////////////////////////////////////////////////////////////////////////
-		auto it = lower_bound(vBB_.begin(), vBB_.end(), pBlock_t(blockID), pBlock_less());
+		// CODIGO ORIGINAL
+		// auto it = lower_bound(vBB_.begin(), vBB_.end(), pBlock_t(blockID), pBlock_less());
 		////////////////////////////////////////////////////////////////////////////////////////////
+
+		auto it = std::lower_bound(vBB_.begin(), vBB_.end(), pBlock_t(blockID),
+	                          [](const pBlock_t& a, const pBlock_t& b) { 
+	                              return a.idx_ < b.idx_; 
+	                          });
 
 		if (it != vBB_.end() && (it->idx_ == blockID || Policy_iterPos)) {
 			pos = it - vBB_.begin();
@@ -1659,16 +1806,24 @@ namespace bitgraph {
 
 		if (LB_policy) {
 			////////////////////////////////////////////////////////////////////////////////////////////
-			res.second = lower_bound(vBB_.begin(), vBB_.end(), pBlock_t(blockID), pBlock_less());
+			// CODIGO ORIGINAL
+			// res.second = lower_bound(vBB_.begin(), vBB_.end(), pBlock_t(blockID), pBlock_less());
 			////////////////////////////////////////////////////////////////////////////////////////////
-
+			res.second = std::lower_bound(vBB_.begin(), vBB_.end(), pBlock_t(blockID),
+		                              [](const pBlock_t& a, const pBlock_t& b) { 
+		                                  return a.idx_ < b.idx_; 
+		                              });
 			res.first = (res.second != vBB_.end()) && (res.second->idx_ == blockID);
 		}
 		else {
 			////////////////////////////////////////////////////////////////////////////////////////////
-			res.second = upper_bound(vBB_.begin(), vBB_.end(), pBlock_t(blockID), pBlock_less());
+			// CODIGO ORIGINAL
+			// res.second = upper_bound(vBB_.begin(), vBB_.end(), pBlock_t(blockID), pBlock_less());
 			////////////////////////////////////////////////////////////////////////////////////////////
-
+			res.second = std::upper_bound(vBB_.begin(), vBB_.end(), pBlock_t(blockID),
+		                              [](const pBlock_t& a, const pBlock_t& b) { 
+		                                  return a.idx_ < b.idx_; 
+		                              });
 			res.first = false;			//the same block cannot be found with upper_bound, only the closest with greater index
 		}
 
@@ -1683,16 +1838,23 @@ namespace bitgraph {
 
 		if (LB_policy) {
 			////////////////////////////////////////////////////////////////////////////////////////////
-			res.second = lower_bound(vBB_.cbegin(), vBB_.cend(), pBlock_t(blockID), pBlock_less());
+			// CODIGO ORIGINAL
+			// res.second = lower_bound(vBB_.cbegin(), vBB_.cend(), pBlock_t(blockID), pBlock_less());
 			////////////////////////////////////////////////////////////////////////////////////////////
-
+			res.second = std::lower_bound(vBB_.cbegin(), vBB_.cend(), pBlock_t(blockID),
+		                              [](const pBlock_t& a, const pBlock_t& b) { 
+		                                  return a.idx_ < b.idx_; 
+		                              });
 			res.first = (res.second != vBB_.end()) && (res.second->idx_ == blockID);
 		}
 		else {
 			////////////////////////////////////////////////////////////////////////////////////////////
-			res.second = upper_bound(vBB_.cbegin(), vBB_.cend(), pBlock_t(blockID), pBlock_less());
+			// res.second = upper_bound(vBB_.cbegin(), vBB_.cend(), pBlock_t(blockID), pBlock_less());
 			////////////////////////////////////////////////////////////////////////////////////////////
-
+			res.second = std::upper_bound(vBB_.cbegin(), vBB_.cend(), pBlock_t(blockID),
+		                              [](const pBlock_t& a, const pBlock_t& b) { 
+		                                  return a.idx_ < b.idx_; 
+		                              });
 			res.first = false;			//the same block cannot be found with upper_bound, only the closest with greater index
 		}
 

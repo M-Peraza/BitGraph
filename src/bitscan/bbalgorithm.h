@@ -241,7 +241,14 @@ namespace bitgraph {
 				reset(popCount);
 			}
 
-			//TODO move and copy semantics...
+			//TODO move and copy semantics...->Done
+
+			// NUEVa implementacionn
+			/* En principio la propia clase BitSet_t manejaria la construccion
+			bbCol_t(const bbCol_t&) = default;
+			bbCol_t& operator=(const bbCol_t&) = default;
+			bbCol_t(bbCol_t&&) noexcept = default;
+			bbCol_t& operator=(bbCol_t&&) noexcept = default;*/
 
 		//allocation
 			void reset(int popCount) {

@@ -25,6 +25,7 @@ namespace bitgraph {
 		BBSentinel& AND(const BitSet& lhs, const BBSentinel& rhs, BBSentinel& res) {
 			res.m_BBL = rhs.m_BBL;
 			res.m_BBH = rhs.m_BBH;
+			//STL
 			for (int i = rhs.m_BBL; i <= rhs.m_BBH; i++) {
 				res.vBB_[i] = lhs.block(i) & rhs.vBB_[i];
 			}
@@ -193,7 +194,7 @@ int BBSentinel::init_scan(scan_types sct) noexcept {
 	case NON_DESTRUCTIVE_REVERSE:
 		update_sentinels();
 		scan_.bbi_=m_BBH;
-		scan_.pos_=WORD_SIZE;		//mask_right[WORD_SIZE]=ONE
+		scan_.pos_=WORD_SIZE;		//mask_right[WORD_SIZE]=bitgraph::constants::ALL_ONES
 		break;
 	case DESTRUCTIVE:				//uses sentinels to iterate and updates them on the fly
 		update_sentinels();
@@ -217,7 +218,7 @@ void  BBSentinel::erase_bit	(){
 	if(m_BBL==EMPTY_ELEM || m_BBH==EMPTY_ELEM) return; 
 
 	for(int i=m_BBL; i<=m_BBH; i++)	
-				vBB_[i]=ZERO;
+				vBB_[i]=bitgraph::constants::ALL_ZEROS;
 }
 
 
@@ -277,7 +278,7 @@ bool BBSentinel::is_empty() const{
 bool BBSentinel::is_empty (int nBBL, int nBBH) const{
 	int bbl=max(nBBL, m_BBL);
 	int bbh=min(nBBH, m_BBH);
-
+	//STL
 	for(int i=bbl; i<=bbh; ++i)
 			if(vBB_[i]) return false;
 
@@ -290,7 +291,7 @@ BBSentinel& BBSentinel::operator= (const  BBSentinel& bbs){
 
 	m_BBL=bbs.m_BBL;
 	m_BBH=bbs.m_BBH;
-
+	//STL
 	for(int i=m_BBL; i<=m_BBH; i++){
 		this->vBB_[i]=bbs.vBB_[i];
 	}
@@ -302,7 +303,7 @@ BBSentinel& BBSentinel::operator= (const  BBSentinel& bbs){
 BBSentinel& BBSentinel::operator&=	(const  BitSet& bbn){
 //////////////////
 // AND operation in the range of the sentinels
-
+	//STL
 	for(int i=m_BBL; i<=m_BBH; i++){
 		this->vBB_[i] &= bbn.block(i);
 	}

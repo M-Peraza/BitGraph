@@ -2,7 +2,7 @@
 #headers for BITSCAN lib
 #########################
 
-file(GLOB HEADER_FILES  ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
+file(GLOB HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 
 ###################
 #creates BITSCAN lib
@@ -28,7 +28,7 @@ set_target_properties(bitscan
 # when other libraries or executables link to bitscan
 target_include_directories(bitscan PUBLIC 
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:${include_install_dir}>    # <prefix>/include/<PROJECT_NAME>
+  $<INSTALL_INTERFACE:include>    # <prefix>/include/<PROJECT_NAME>
 )
 
 #############
@@ -46,7 +46,7 @@ install(
    ARCHIVE DESTINATION lib
    LIBRARY DESTINATION lib
    RUNTIME DESTINATION bin
-   INCLUDES DESTINATION include
+   INCLUDES DESTINATION "${include_install_dir}"
 )
 
 #install header files
@@ -62,11 +62,8 @@ endif(INSTALL_BITGRAPH)
 ###################
 # UNIT TESTS for BITSCAN lib  
 ###################
-#option(bitscan_build_tests "Build bitscan tests." ON)
 if (BUILD_TESTS)
 
 	add_subdirectory(tests)
 
 endif()
-
-

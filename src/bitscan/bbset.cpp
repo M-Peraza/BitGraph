@@ -24,7 +24,7 @@ BitSet::BitSet(int nPop, bool val) :
 {
 	
 	try {
-		vBB_.assign(nBB_, val ? ONE : 0);		
+		vBB_.assign(nBB_, val ? bitgraph::constants::ALL_ONES : 0);		
 	}
 	catch (...) {
 		LOG_ERROR("Error during construction - BitSet::BitSet");
@@ -32,7 +32,7 @@ BitSet::BitSet(int nPop, bool val) :
 		std::exit(-1);
 	}
 
-	//trim last bitblock to ZERO if val = TRUE
+	//trim last bitblock to bitgraph::constants::ALL_ZEROS if val = TRUE
 	if (val) {
 		vBB_.back() &= bblock::MASK_0_HIGH(nPop - WMUL(nBB_ - 1));
 	}
@@ -203,27 +203,42 @@ void BitSet::reset(int popsize, const vint& lv) {
 
 BitSet& BitSet::operator &=	(const BitSet& bbn){
 
-	for (auto i = 0; i < nBB_; ++i) {
-		vBB_[i] &= bbn.vBB_[i];
-	}
+	//CODIGO ORIGINAL
+	// for (auto i = 0; i < nBB_; ++i) {
+	// 	vBB_[i] &= bbn.vBB_[i];
+	// }
+
+	std::transform(vBB_.begin(), vBB_.begin() + nBB_,
+				  bbn.vBB_.begin(), vBB_.begin(),
+				  std::bit_and<BITBOARD>{});
 				
 	return *this;
 }
 
 BitSet& BitSet::operator |=	(const BitSet& bbn){
 	
-	for (auto i = 0; i < nBB_; ++i) {
-		vBB_[i] |= bbn.vBB_[i];
-	}
+	//CODIGO ORIGINAL
+	// for (auto i = 0; i < nBB_; ++i) {
+	// 	vBB_[i] |= bbn.vBB_[i];
+	// }
+
+	std::transform(vBB_.begin(), vBB_.begin() + nBB_,
+				  bbn.vBB_.begin(), vBB_.begin(),
+				  std::bit_or<BITBOARD>{});
 
 	return *this;
 }
 
 BitSet& BitSet::operator ^=	(const BitSet& bbn) {
 	
-	for (auto i = 0; i < nBB_; ++i) {
-		vBB_[i] ^= bbn.vBB_[i];
-	}
+	//CODIGO ORIGINAL
+	// for (auto i = 0; i < nBB_; ++i) {
+	// 	vBB_[i] ^= bbn.vBB_[i];
+	// }
+
+	std::transform(vBB_.begin(), vBB_.begin() + nBB_,
+				  bbn.vBB_.begin(), vBB_.begin(),
+				  std::bit_xor<BITBOARD>{});
 
 	return *this;
 }
@@ -231,9 +246,14 @@ BitSet& BitSet::operator ^=	(const BitSet& bbn) {
 
 BitSet& BitSet::flip (){
 
-	for (auto i = 0; i < nBB_; ++i) {
-		vBB_[i] = ~vBB_[i];
-	}
+	//CODIGO ORIGINAL
+	// for (auto i = 0; i < nBB_; ++i) {
+	// 	vBB_[i] = ~vBB_[i];
+	// }
+
+	std::transform(vBB_.begin(), vBB_.begin() + nBB_,
+				  vBB_.begin(),
+				  std::bit_not<BITBOARD>{});
 
 	return *this;
 }
@@ -244,10 +264,14 @@ BitSet& BitSet::flip_block(int firstBlock, int lastBlock)
 	///////////////////////////////////////////////////////////////////////////////////
 	assert((firstBlock >= 0) && (firstBlock <= lastBlock) && (lastBlock < capacity()));
 	/////////////////////////////////////////////////////////////////////////////////
+	//CODIGO ORIGINAL
+	// for (auto i = firstBlock; i < lastBlock; ++i) {
+	// 	vBB_[i] = ~vBB_[i];
+	// }
 
-	for (auto i = firstBlock; i < lastBlock; ++i) {
-		vBB_[i] = ~vBB_[i];
-	}
+	std::transform(vBB_.begin() + firstBlock, vBB_.begin() + lastBlock,
+				  vBB_.begin() + firstBlock,
+				  std::bit_not<BITBOARD>{});
 
 	return *this;
 }
@@ -353,6 +377,7 @@ BitSet& BitSet::set_bit(const vint& lv) {
 
 	//copies elements up to the maximum capacity of the bitstring
 	auto maxPopSize = WMUL(nBB_);
+	//STL
 	for (auto i = 0; i < lv.size(); ++i) {
 
 		/////////////////////
@@ -379,18 +404,28 @@ namespace bitgraph {
 
 		BitSet& AND(const BitSet& lhs, const BitSet& rhs, BitSet& res) {
 
-			for (auto i = 0; i < lhs.nBB_; ++i) {
-				res.vBB_[i] = lhs.vBB_[i] & rhs.vBB_[i];
-			}
+			//CODIGO ORIGINAL
+			// for (auto i = 0; i < lhs.nBB_; ++i) {
+			// 	res.vBB_[i] = lhs.vBB_[i] & rhs.vBB_[i];
+			// }
+			
+			std::transform(lhs.vBB_.begin(), lhs.vBB_.begin() + lhs.nBB_,
+				  rhs.vBB_.begin(), res.vBB_.begin(),
+				  std::bit_and<BITBOARD>{});
 
 			return res;
 		}
 
 		BitSet& OR(const BitSet& lhs, const BitSet& rhs, BitSet& res) {
 
-			for (auto i = 0; i < lhs.nBB_; ++i) {
-				res.vBB_[i] = lhs.vBB_[i] | rhs.vBB_[i];
-			}
+			//CODIGO ORIGINAL
+			// for (auto i = 0; i < lhs.nBB_; ++i) {
+			// 	res.vBB_[i] = lhs.vBB_[i] | rhs.vBB_[i];
+			// }
+
+			std::transform(lhs.vBB_.begin(), lhs.vBB_.begin() + lhs.nBB_,
+				  rhs.vBB_.begin(), res.vBB_.begin(),
+				  std::bit_or<BITBOARD>{});
 
 			return res;
 		}
@@ -412,10 +447,10 @@ namespace bitgraph {
 		//
 		//	////set bits to 0 outside the range 
 		//	//for (int i = lastBlock + 1; i < lhs.nBB_; ++i) {
-		//	//	lhs.vBB_[i] = ZERO;
+		//	//	lhs.vBB_[i] = bitgraph::constants::ALL_ZEROS;
 		//	//}
 		//	//for (int i = 0; i < firstBlock; ++i) {
-		//	//	lhs.vBB_[i] = ZERO;
+		//	//	lhs.vBB_[i] = bitgraph::constants::ALL_ZEROS;
 		//	//}
 		//
 		//	//return lhs;
@@ -425,10 +460,14 @@ namespace bitgraph {
 
 		BitSet& erase_bit(const BitSet& lhs, const BitSet& rhs, BitSet& res) {
 
+			//CODIGO ORIGINAL
+			// for (auto i = 0; i < lhs.nBB_; ++i) {
+			// 	res.vBB_[i] = lhs.vBB_[i] & ~rhs.vBB_[i];
+			// }
 
-			for (auto i = 0; i < lhs.nBB_; ++i) {
-				res.vBB_[i] = lhs.vBB_[i] & ~rhs.vBB_[i];
-			}
+			std::transform(lhs.vBB_.begin(), lhs.vBB_.begin() + lhs.nBB_,
+				  rhs.vBB_.begin(), res.vBB_.begin(),
+				  [](BITBOARD a, BITBOARD b) { return a & ~b; });
 
 			return res;
 		}
