@@ -534,6 +534,4 @@ namespace bitgraph{
 
 }//end namespace bitgraph
 
-
-
-
+#endif //__GRAPH_GEN_H__

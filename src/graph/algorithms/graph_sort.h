@@ -1309,7 +1309,7 @@ namespace bitgraph {
 	template<typename Graph_t>
 	vint GraphSort<Graph_t>::new_order_furini(gbbs::sort_t alg, gbbs::place_t place) {
 		/////////////////////
-		// Furini´s implementation of MIN_WIDTH for comparision purposes
+		// Furiniï¿½s implementation of MIN_WIDTH for comparision purposes
 		// 
 		// COMMENTS-currently only for sparse graphs
 
@@ -2064,6 +2064,5 @@ namespace bitgraph {
 	}
 
 }//end namespace bitgraph
-	
 
-
+#endif

@@ -369,3 +369,4 @@ namespace bitgraph{
 
 }//end of namespace bitgraph
 
+#endif //__GRAPH_MAPPINGS_H__

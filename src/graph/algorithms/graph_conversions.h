@@ -122,4 +122,4 @@ namespace bitgraph {
 
 }//end of namespace bitgraph
 
-
+#endif //__GRAPH_TYPE_CONVERSIONS_H__

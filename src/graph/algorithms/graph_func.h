@@ -403,7 +403,7 @@ namespace bitgraph {
 
 				typename Graph_t::_wt total_weight = 0;
 
-				// Obtiene el vector de pesos de los vértices
+				// Obtiene el vector de pesos de los vï¿½rtices
 				const auto& weights = g.weights();
 
 				// Recorre todos los pesos y los suma
@@ -786,3 +786,4 @@ namespace bitgraph {
 
 } //namespace bitgraph
 
+#endif //__GRAPH_FUNC_H__

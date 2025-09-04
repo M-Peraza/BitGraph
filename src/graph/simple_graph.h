@@ -410,7 +410,7 @@ namespace bitgraph {
 			**/
 			ostream& print_adj(std::ostream & = std::cout, bool eofl = true) const;
 
-			/**º
+			/**ï¿½
 			* @brief Edges of the graph to the output stream in format [v]-->[w]
 			**/
 			virtual ostream& print_edges(std::ostream & = std::cout, bool eofl = false);
@@ -1370,6 +1370,7 @@ namespace bitgraph {
 		}
 	}
 
+#endif
 
 
 

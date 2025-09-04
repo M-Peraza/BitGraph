@@ -15,3 +15,5 @@ struct filterGraphSortType<bitgraph::sparse_ugraph>{};
 
 template <>
 struct filterGraphSortType<bitgraph::ugraph_w>{};		/* for weighted graphs */
+
+#endif

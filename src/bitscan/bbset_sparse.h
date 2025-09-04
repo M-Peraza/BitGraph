@@ -125,6 +125,8 @@ namespace bitgraph {
 			* @returns reference to res
 			**/
 			friend  BitSetSp& OR(const BitSetSp& lhs, const BitSetSp& rhs, BitSetSp& res);
+			friend  BitSetSp OR(BitSetSp lhs, const BitSetSp& rhs);
+			friend  BitSetSp XOR(BitSetSp lhs, const BitSetSp& rhs);
 
 			/**
 			* @brief Removes 1-bits in the bitstring rhs from the bitstring lhs. Stores
@@ -136,6 +138,7 @@ namespace bitgraph {
 			* TODO - add optimization policy to allow to choose reference bitset (see (1) - 25/02/2025)
 			**/
 			friend BitSetSp& erase_bit(const BitSetSp& lhs, const BitSetSp& rhs, BitSetSp& res);
+			friend BitSetSp erase_bit(BitSetSp lhs, const BitSetSp& rhs);
 
 			//STL
 			//TODO - add same interface as BitSet (25/02/2025)
@@ -1942,6 +1945,18 @@ namespace bitgraph {
 				
 		inline
 			BitSetSp AND(BitSetSp lhs, const BitSetSp& rhs) { return lhs &= rhs; }
+
+		inline
+			BitSetSp OR(BitSetSp lhs, const BitSetSp& rhs) { return lhs |= rhs; }
+
+		inline
+			BitSetSp XOR(BitSetSp lhs, const BitSetSp& rhs) { return lhs ^= rhs; }
+
+		inline
+			BitSetSp erase_bit(BitSetSp lhs, const BitSetSp& rhs) { 
+				lhs.erase_bit(rhs); 
+				return lhs; 
+			}
 
 		inline
 			BitSetSp& OR(const BitSetSp& lhs, const BitSetSp& rhs, BitSetSp& res) {
