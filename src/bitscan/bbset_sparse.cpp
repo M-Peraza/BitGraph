@@ -389,8 +389,8 @@ BitSetSp& BitSetSp::set_bit (const BitSetSp& rhs){
 	return *this;		
 }
 
-// NUEVA IMPLEMENTACION
-BitSetSp& BitSetSp::set_bit(int firstBit, int lastBit, const BitSetSp& rhs) {
+// NUEVA IMPLEMENTACION -> comentada porque esta borrada en los headers
+/*BitSetSp& BitSetSp::set_bit(int firstBit, int lastBit, const BitSetSp& rhs) {
 	
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	assert(firstBit >= 0 && firstBit <= lastBit && lastBit < (this->capacity() << 6) && lastBit < (rhs.capacity() << 6));
@@ -460,7 +460,7 @@ BitSetSp& BitSetSp::set_bit(int firstBit, int lastBit, const BitSetSp& rhs) {
 	}
 	
 	return *this;
-}
+}*/
 
 
 BitSetSp&  BitSetSp::set_block (int firstBlock, int lastBlock, const BitSetSp& rhs){

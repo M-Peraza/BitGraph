@@ -102,7 +102,6 @@ namespace bitgraph {
 			* @details: The capacity of lhs and rhs must be the same.
 			*
 			* TODO... (25/02/2025)->Done
-			//STL comprobar
 			**/
 			friend BitSetSp& AND(int firstBit, int lastBit, const BitSetSp& lhs,
 									const BitSetSp& rhs, BitSetSp& res				) = delete;
@@ -138,9 +137,9 @@ namespace bitgraph {
 			* TODO - add optimization policy to allow to choose reference bitset (see (1) - 25/02/2025)
 			**/
 			friend BitSetSp& erase_bit(const BitSetSp& lhs, const BitSetSp& rhs, BitSetSp& res);
+			//NUEVA IMPLEMENTACION
 			friend BitSetSp erase_bit(BitSetSp lhs, const BitSetSp& rhs);
 
-			//STL
 			//TODO - add same interface as BitSet (25/02/2025)
 			// Missing methods from BitSet for interface parity - NOW IMPLEMENTED:
 	
@@ -606,8 +605,7 @@ namespace bitgraph {
 			 * @details oriented to basic bitscanning
 			 * @details: zero blocks are not removed
 			 *
-			 * //STL
-			 * TODO -  improve or remove (19/02/2025)
+			 * TODO -  improve or remove (19/02/2025)->Done
 			 **/
 			inline	vPB_it  erase_bit(int bit, vPB_it from_it);
 
@@ -1085,8 +1083,8 @@ namespace bitgraph {
 		
 		U32 posInBB;
 		
-		//CODIGO ORIGINAL Se podria dejar el original argumentando en esta y las siguientes funciones que 
-		//el aumento en la dificultade de lectura del codigo no compense la optimizacion
+		//CODIGO ORIGINAL Se podria dejar el original argumentando en esta y alguna de las siguientes funciones que 
+		//el aumento en la dificultad de lectura del codigo no compense la optimizacion
 
 		// for (int i = vBB_.size() - 1; i >= 0; --i) {
 
@@ -1133,7 +1131,6 @@ namespace bitgraph {
 
 	int BitSetSp::msbn64_lup() const {
 
-		//STL
 		union u {
 			U16 c[4];
 			BITBOARD b;
@@ -1945,13 +1942,13 @@ namespace bitgraph {
 				
 		inline
 			BitSetSp AND(BitSetSp lhs, const BitSetSp& rhs) { return lhs &= rhs; }
-
+		//NUEVA IMPLEMENTACION
 		inline
 			BitSetSp OR(BitSetSp lhs, const BitSetSp& rhs) { return lhs |= rhs; }
-
+		//NUEVA IMPLEMENTACION
 		inline
 			BitSetSp XOR(BitSetSp lhs, const BitSetSp& rhs) { return lhs ^= rhs; }
-
+		//NUEVA IMPLEMENTACION
 		inline
 			BitSetSp erase_bit(BitSetSp lhs, const BitSetSp& rhs) { 
 				lhs.erase_bit(rhs); 

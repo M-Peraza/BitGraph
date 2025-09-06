@@ -377,7 +377,7 @@ BitSet& BitSet::set_bit(const vint& lv) {
 
 	//copies elements up to the maximum capacity of the bitstring
 	auto maxPopSize = WMUL(nBB_);
-	//STL
+	
 	for (auto i = 0; i < lv.size(); ++i) {
 
 		/////////////////////

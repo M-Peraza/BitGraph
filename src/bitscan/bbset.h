@@ -168,7 +168,7 @@ namespace bitgraph {
 
 			// NUEVA IMPLEMENTACION(Faltaba XOR)
 			/**
-			* @brief XOR between lhs and rhs bitsets (move-aware version)
+			* @brief XOR between lhs and rhs bitsets
 			* @details Takes lhs by value to enable move semantics
 			* @returns resulting bitset
 			**/
@@ -1068,7 +1068,6 @@ namespace bitgraph{
 			assert((firstBlock >= 0) && (last_block < capacity()) && (firstBlock <= last_block));
 			///////////////////////////////////////////////////////////////////////////////
 
-			//STL
 			for (auto i = firstBlock; i <= last_block; ++i) {
 				if (vBB_[i] & rhs.vBB_[i]) {
 					return false;
@@ -1078,14 +1077,17 @@ namespace bitgraph{
 		}
 
 
-		//STL
+		//CODIGO ORIGINAL
 		BitSet& BitSet::set_bit(int lastBit, const BitSet& bb_add) {
 
 			int bbh = WDIV(lastBit);
 
-			for (auto i = 0; i < bbh; ++i) {
-				vBB_[i] = bb_add.vBB_[i];
-			}
+			//CODIGO ORIGINAL
+			//for (auto i = 0; i < bbh; ++i) {
+			//	vBB_[i] = bb_add.vBB_[i];
+			//}
+
+			std::copy(bb_add.vBB_.data(), bb_add.vBB_.data() + bbh, vBB_.data());
 
 			//copy the appropiate part of the bbh bitblock (including high)
 			bblock::copy_low(lastBit - WMUL(bbh), bb_add.vBB_[bbh], this->vBB_[bbh]);
@@ -1695,7 +1697,6 @@ namespace bitgraph{
 			int last_block;
 			(LastBlock == -1) ? last_block = nBB_ - 1 : last_block = LastBlock;
 
-			//STL
 			for (auto i = FirstBlock; i <= LastBlock; ++i) {
 				vBB_[i] &= ~(bb_lhs.vBB_[i] | bb_rhs.vBB_[i]);
 			}
@@ -1920,14 +1921,16 @@ namespace bitgraph {
 
 			//set to 0 all bits outside the bitblock range if required
 			if (Erase) {
-				//STL
-				for (int i = bbh + 1; i < res.nBB_; ++i) {
-					res.vBB_[i] = bitgraph::constants::ALL_ZEROS;
-				}
-				//STL
-				for (int i = 0; i < bbl; ++i) {
-					res.vBB_[i] = bitgraph::constants::ALL_ZEROS;
-				}
+				//CODIGO ORIGINAL
+				//for (int i = bbh + 1; i < res.nBB_; ++i) {
+				//	res.vBB_[i] = bitgraph::constants::ALL_ZEROS;
+				//}
+				//for (int i = 0; i < bbl; ++i) {
+				//	res.vBB_[i] = bitgraph::constants::ALL_ZEROS;
+				//}
+
+				std::fill(res.vBB_.data() + bbh + 1, res.vBB_.data() + res.nBB_, bitgraph::constants::ALL_ZEROS);
+				std::fill(res.vBB_.data(), res.vBB_.data() + bbl, bitgraph::constants::ALL_ZEROS);
 			}
 
 			return res;
@@ -2039,14 +2042,16 @@ namespace bitgraph {
 
 			//set to 0 all bits outside the bitblock range if required
 			if (Erase) {
-				//STL
-				for (int i = bbh + 1; i < res.nBB_; ++i) {
-					res.vBB_[i] = bitgraph::constants::ALL_ZEROS;
-				}
-				//STL
-				for (int i = 0; i < bbl; ++i) {
-					res.vBB_[i] = bitgraph::constants::ALL_ZEROS;
-				}
+				//CODIGO ORIGINAL
+				//for (int i = bbh + 1; i < res.nBB_; ++i) {
+				//	res.vBB_[i] = bitgraph::constants::ALL_ZEROS;
+				//}
+				//for (int i = 0; i < bbl; ++i) {
+				//	res.vBB_[i] = bitgraph::constants::ALL_ZEROS;
+				//}
+
+				std::fill(res.vBB_.data() + bbh + 1, res.vBB_.data() + res.nBB_, bitgraph::constants::ALL_ZEROS);
+				std::fill(res.vBB_.data(), res.vBB_.data() + bbl, bitgraph::constants::ALL_ZEROS);
 			}
 
 			return res;
@@ -2103,7 +2108,6 @@ namespace bitgraph {
 
 	}//end namespace _impl
 
-	//STL mirar si XOR deberia ir aqui
 	//friend functions of BitSet
 	using _impl::operator!=;
 	using _impl::operator==;

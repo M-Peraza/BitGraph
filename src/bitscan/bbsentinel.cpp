@@ -11,7 +11,7 @@
  **/
 
 #include "bbsentinel.h"
-#include <algorithm>			//std::max
+#include <algorithm>			//std::max, std::any_of, std::transform, std::copy
 #include <iostream>
 
 using namespace std;
@@ -25,7 +25,7 @@ namespace bitgraph {
 		BBSentinel& AND(const BitSet& lhs, const BBSentinel& rhs, BBSentinel& res) {
 			res.m_BBL = rhs.m_BBL;
 			res.m_BBH = rhs.m_BBH;
-			//STL
+	
 			for (int i = rhs.m_BBL; i <= rhs.m_BBH; i++) {
 				res.vBB_[i] = lhs.block(i) & rhs.vBB_[i];
 			}
@@ -278,11 +278,12 @@ bool BBSentinel::is_empty() const{
 bool BBSentinel::is_empty (int nBBL, int nBBH) const{
 	int bbl=max(nBBL, m_BBL);
 	int bbh=min(nBBH, m_BBH);
-	//STL
-	for(int i=bbl; i<=bbh; ++i)
-			if(vBB_[i]) return false;
+	//CODIGO ORIGINAL
+	//for(int i=bbl; i<=bbh; ++i)
+	//		if(vBB_[i]) return false;
+	//return true;
 
-return true;	
+	return !std::any_of(vBB_.data() + bbl, vBB_.data() + bbh + 1, [](BITBOARD block) { return block != 0; });
 }
 
 BBSentinel& BBSentinel::operator= (const  BBSentinel& bbs){
@@ -291,10 +292,12 @@ BBSentinel& BBSentinel::operator= (const  BBSentinel& bbs){
 
 	m_BBL=bbs.m_BBL;
 	m_BBH=bbs.m_BBH;
-	//STL
-	for(int i=m_BBL; i<=m_BBH; i++){
-		this->vBB_[i]=bbs.vBB_[i];
-	}
+	//CODIGO ORIGINAL
+	//for(int i=m_BBL; i<=m_BBH; i++){
+	//	this->vBB_[i]=bbs.vBB_[i];
+	//}
+
+	std::copy(bbs.vBB_.data() + m_BBL, bbs.vBB_.data() + m_BBH + 1, this->vBB_.data() + m_BBL);
 
 	return *this;
 
@@ -303,7 +306,7 @@ BBSentinel& BBSentinel::operator= (const  BBSentinel& bbs){
 BBSentinel& BBSentinel::operator&=	(const  BitSet& bbn){
 //////////////////
 // AND operation in the range of the sentinels
-	//STL
+
 	for(int i=m_BBL; i<=m_BBH; i++){
 		this->vBB_[i] &= bbn.block(i);
 	}

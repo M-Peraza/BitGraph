@@ -18,6 +18,7 @@
 #include "bitscan/bbscan.h"
 #include "bitscan/bbalgorithm.h"			//MIN, MAX
 #include <utility>							//std::move
+#include <numeric>							//std::accumulate
 
 namespace bitgraph {
 	namespace _impl {
@@ -133,12 +134,14 @@ namespace bitgraph {
 namespace bitgraph {
 
 	inline int BBSentinel::popcn64() const {
-		BITBOARD pc = 0;
-		//STL
-		for (int i = m_BBL; i <= m_BBH; i++) {
-			pc += __popcnt64(vBB_[i]);
-		}
-		return pc;
+		//BITBOARD pc = 0;
+		//CODIGO ORIGINAL
+		//for (int i = m_BBL; i <= m_BBH; i++) {
+		//	pc += __popcnt64(vBB_[i]);
+		//}
+		
+		return std::accumulate(vBB_.data() + m_BBL, vBB_.data() + m_BBH + 1, BITBOARD(0), 
+			[](BITBOARD sum, BITBOARD block) { return sum + __popcnt64(block); });
 	}
 
 }
