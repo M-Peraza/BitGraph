@@ -1,11 +1,18 @@
 /**
  * @file bbscan_sparse.h
- * @brief header for sparse class equivalent to the BBScan class
- *		  manages sparse bit strings with efficient bitscanning capabilities
- * @author pss
- * @details: created 2012, last_update 25/02/2025
+ * @brief Sparse bitset with optimized scanning for low-density patterns
+ * @author Pablo San Segundo
+ * @version 1.0
+ * @date 2025
+ * @since 25/02/2025
  *
- * TODO refactoring and testing 25/02/2025
+ * @details Provides BBScanSp class combining sparse bitset storage with
+ * efficient cached bitscanning. Optimized for sparse bit patterns where
+ * scanning performance matters and memory efficiency is critical.
+ * 
+ * **Optimization Target:** Low-density bitsets requiring frequent scanning
+ * 
+ * @todo Complete refactoring and comprehensive testing (25/02/2025)
  **/
 
 #ifndef __BBSCAN_SPARSE_H__
@@ -21,16 +28,41 @@ namespace bitgraph {
 
 	namespace _impl {
 
-		/////////////////////////////////
-		//
-		// Class BBScanSp
-		// (Uses a number of optimizations for sparse bit scanning)
-		//
-		///////////////////////////////////
-
+		/**
+		 * @class BBScanSp
+		 * @brief Sparse bitset with high-performance scanning capabilities
+		 * @details Combines the memory efficiency of sparse bitset storage (BitSetSp)
+		 * with cached scanning state for optimal performance in low-density scenarios.
+		 * Uses specialized optimizations for sparse bit pattern scanning.
+		 * 
+		 * **Key Optimizations:**
+		 * - Sparse storage model for memory efficiency
+		 * - Cached scan state for performance
+		 * - Skip-ahead algorithms for sparse patterns
+		 * - Template integration with BBObject scanning classes
+		 * 
+		 * **Best Use Case:** Large bitsets with < 10% density requiring frequent scanning
+		 * 
+		 * **Inheritance:** Extends BitSetSp with scanning-specific functionality
+		 */
 		class BBScanSp : public BitSetSp {
 
 		public:
+
+			/**
+			 * @defgroup SparseScanManagement Sparse Scan State Management and Construction
+			 * @brief Functions for managing sparse scan state, construction, and initialization
+			 * @details This group encompasses all operations related to sparse scan state management,
+			 * object construction/destruction, and scanning initialization optimized for sparse bitsets.
+			 * Includes specialized initialization that handles empty sparse blocks efficiently.
+			 * 
+			 * **Sparse-Specific Features:**
+			 * - Empty sparse bitset handling in initialization
+			 * - Block collection position management (not bitstring index)
+			 * - Skip-ahead algorithms for sparse pattern optimization
+			 * - Template friend integration with BBObject scanning classes
+			 * @{
+			 */
 
 			template <class U>
 			friend struct BBObject::Scan;
@@ -41,18 +73,11 @@ namespace bitgraph {
 			template <class U>
 			friend struct BBObject::ScanDestRev;
 
-		public:
-
 			//aliases for bitscanning 
 			using scan = typename BBObject::Scan<BBScanSp>;
 			using scanR = typename BBObject::ScanRev<BBScanSp>;
 			using scanD = typename BBObject::ScanDest<BBScanSp>;
 			using scanDR = typename BBObject::ScanDestRev<BBScanSp>;
-
-		public:
-
-			//////////////////////////////
-			//construction / destruction
 
 			//inherit constructors
 			using BitSetSp::BitSetSp;
@@ -106,8 +131,22 @@ namespace bitgraph {
 			**/
 			int init_scan(int firstBit, scan_types sct);
 
-			////////////////
-			// bitscan forward
+			/** @} */ // end SparseScanManagement group
+
+			/**
+			 * @defgroup SparseForwardScanning Forward Bit Scanning Operations for Sparse Bitsets
+			 * @brief Functions for forward bit enumeration optimized for sparse patterns
+			 * @details This group contains all forward scanning operations (next_bit variants)
+			 * that traverse sparse bitsets from low to high bit positions. Operations are
+			 * optimized to skip empty blocks and leverage the sparse storage structure.
+			 * 
+			 * **Sparse Scanning Optimizations:**
+			 * - Skip empty blocks automatically during traversal
+			 * - Block collection indexing vs. bitstring indexing awareness
+			 * - Efficient handling of sparse pattern discontinuities
+			 * - Both destructive and non-destructive scanning modes
+			 * @{
+			 */
 
 			/**
 			* @brief next bit in the bitstring, starting from the block
@@ -147,8 +186,22 @@ namespace bitgraph {
 			**/
 			using BitSetSp::next_bit;
 
-			////////////////
-			// bitscan backwards
+			/** @} */ // end SparseForwardScanning group
+
+			/**
+			 * @defgroup SparseReverseScanning Reverse Bit Scanning Operations for Sparse Bitsets  
+			 * @brief Functions for reverse bit enumeration optimized for sparse patterns
+			 * @details This group contains all reverse scanning operations (prev_bit variants)
+			 * that traverse sparse bitsets from high to low bit positions. Operations are
+			 * optimized to skip empty blocks and handle sparse pattern discontinuities efficiently.
+			 * 
+			 * **Sparse Scanning Optimizations:**
+			 * - Reverse skip-ahead through empty blocks
+			 * - Efficient backward traversal of block collections
+			 * - Sparse pattern discontinuity handling in reverse
+			 * - Both destructive and non-destructive scanning modes
+			 * @{
+			 */
 
 			/**
 			* @brief previous bit (next less significant bit) in the bitstring, starting from the bit retrieved
@@ -184,14 +237,20 @@ namespace bitgraph {
 			/////////////////
 			//	DEPRECATED
 
-		//inline int next_bit_del				(int& nBB);								//nBB: index of bitblock in the bitstring	(not in the collection)	
-		//inline int next_bit_del				(int& nBB, BBScanSp& );					//EXPERIMENTAL! 
-		//inline int next_bit_del_pos			(int& posBB);							//posBB: position of bitblock in the collection (not the index of the element)		
-		//inline int next_bit					(int& nBB);								//nBB: index of bitblock in the bitstring	(not in the collection)				
-		//inline int prev_bit_del				(int& nBB);
+			//inline int next_bit_del				(int& nBB);								//nBB: index of bitblock in the bitstring	(not in the collection)	
+			//inline int next_bit_del				(int& nBB, BBScanSp& );					//EXPERIMENTAL! 
+			//inline int next_bit_del_pos			(int& posBB);							//posBB: position of bitblock in the collection (not the index of the element)		
+			//inline int next_bit					(int& nBB);								//nBB: index of bitblock in the bitstring	(not in the collection)				
+			//inline int prev_bit_del				(int& nBB);
 
-		//////////////////
-		// data members
+			/** @} */ // end SparseReverseScanning group
+
+			/**
+			 * @brief Internal sparse scan state storage
+			 * @details Protected member containing cached scan position for efficient
+			 * continuation of sparse bitscanning operations. Manages both block collection
+			 * position and bit position within blocks for optimal sparse traversal.
+			 */
 		protected:
 			scan_t scan_;
 		};

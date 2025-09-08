@@ -1,11 +1,37 @@
- /**
-  * @file bbalgorithm.h
-  * @brief header for the algorithms and data structures for bitstrings and bitblocks
-  *		   includes namespace bbalg at the end with a few algorithms
-  * @author pss
-  * @details created 2017, last_update 27/02/2025
-  * @details no *.cpp file - only headers
-  **/
+/**
+ * @file bbalgorithm.h
+ * @brief Algorithm templates and utility functions for bitset operations
+ * @author Pablo San Segundo
+ * @version 1.1
+ * @date 2025
+ * @since 27/02/2025
+ *
+ * @details Provides template algorithms and utility data structures for
+ * bitstring and bitblock operations. Contains the bbalg namespace with
+ * stateless functions for BitSet manipulation and specialized wrapper
+ * classes for performance optimization.
+ * 
+ * **Key Components:**
+ * - **bbalg namespace**: Stateless algorithms for bitset conversion and analysis
+ * - **bbSize_t**: Wrapper class with cached population count for O(1) size queries
+ * - **bbStack_t**: Hybrid stack/bitset container with synchronized operations
+ * - **bbCol_t**: Fixed-size collection of bitsets for parallel operations
+ * 
+ * **Design Principles:**
+ * - Header-only implementation for template instantiation
+ * - Template-based algorithms for type flexibility
+ * - Stateless function design for thread safety
+ * - Cached metadata for performance optimization
+ * 
+ * @par Thread Safety
+ * All functions in bbalg namespace are thread-safe as they are stateless.
+ * Wrapper classes (bbSize_t, bbStack_t, bbCol_t) are NOT thread-safe.
+ * 
+ * @par Performance Notes
+ * - bbSize_t provides O(1) size() queries vs O(n/64) for standard bitsets
+ * - bbStack_t enables dual-view access patterns for graph algorithms
+ * - bbCol_t optimizes bulk operations on multiple bitsets
+ **/
 
 #ifndef  _BBALG_H_
 #define  _BBALG_H_
@@ -15,6 +41,7 @@
 #include "bitscan/bbset.h"
 #include <array>
 #include <functional>
+#include <algorithm>  // For std::all_of
 
 //aliases
 namespace bitgraph {
@@ -24,40 +51,114 @@ namespace bitgraph {
 }
 
 namespace bitgraph {
-	///////////////////////
-	//
-	// namespace bbAlg for stateless functions for BitSets
-	//
-	// TODO - check and refactor these functions (27/02/2025)
-	// 
-	///////////////////////
-
+	/**
+	 * @namespace bitgraph::bbalg
+	 * @brief Stateless algorithms for bitset operations
+	 * @details Contains template functions for common bitset algorithms
+	 * including conversion, random generation, and bit extraction operations.
+	 * All functions are stateless and thread-safe, designed for use with
+	 * any bitset type in the BBObject hierarchy.
+	 * 
+	 * @par Algorithm Categories
+	 * - **Conversion**: to_vector() - Extract bit positions as integer vector
+	 * - **Generation**: gen_random_block() - Create random bit patterns
+	 * - **Extraction**: first_k_bits() - Find first k set bits
+	 * 
+	 * @par Usage Example
+	 * @code{.cpp}
+	 * BBScan bs(1000);
+	 * bs.set_bit(10); bs.set_bit(20); bs.set_bit(30);
+	 * 
+	 * // Convert to vector of bit positions
+	 * std::vector<int> bits = bbalg::to_vector(bs);
+	 * // bits = {10, 20, 30}
+	 * 
+	 * // Generate random bitblock with 50% density
+	 * BITBOARD random = bbalg::gen_random_block(0.5);
+	 * @endcode
+	 */
 	namespace bbalg {
 
 		/**
-		* @brief converts a bitset to a vector of integers
-		*        I. the bitset is not modified
-		*		II. the bitset must be of the efficient scanning type
-		*			in the BBObject hierarchy (BBScan or BBScanSp)
-		*
-		* TODO - use SFINAE for the type of bitset
-		**/
+		 * @brief Converts a bitset to a vector of bit positions
+		 * @tparam BitSet_t Any bitset type from BBObject hierarchy (BBScan, BBScanSp, etc.)
+		 * @param bbn Input bitset (not modified)
+		 * @return Vector containing positions of all set bits in ascending order
+		 * 
+		 * @par Complexity
+		 * O(k) where k is the number of set bits
+		 * 
+		 * @par Requirements
+		 * BitSet_t must support next_bit() operation for efficient scanning
+		 * 
+		 * @par Example
+		 * @code{.cpp}
+		 * BBScan bs(100);
+		 * bs.set_bit(5); bs.set_bit(42); bs.set_bit(99);
+		 * auto positions = bbalg::to_vector(bs);
+		 * // positions = {5, 42, 99}
+		 * @endcode
+		 * 
+		 * @note Future enhancement: Use SFINAE to enforce BitSet_t requirements
+		 */
 		template<class BitSet_t>
 		std::vector<int> to_vector(BitSet_t& bbn);
 
 		/**
-		* @brief generates a random BITBOARD with density p of 1-bits
-		**/
-		BITBOARD gen_random_block(double p);
+		 * @brief Generates a random 64-bit block with specified bit density
+		 * @param p Probability of each bit being set (0.0 to 1.0)
+		 * @return BITBOARD with approximately p*64 bits set randomly
+		 * 
+		 * @pre 0.0 <= p <= 1.0
+		 * @post Population count ≈ p * 64 (expected value)
+		 * 
+		 * @par Complexity
+		 * O(64) - constant time for single block
+		 * 
+		 * @par Statistical Properties
+		 * Each bit is independently set with probability p
+		 * Expected popcount = 64 * p, Variance = 64 * p * (1-p)
+		 * 
+		 * @par Example
+		 * @code{.cpp}
+		 * // Generate block with ~32 bits set (50% density)
+		 * BITBOARD half_dense = bbalg::gen_random_block(0.5);
+		 * 
+		 * // Generate sparse block with ~6 bits set (10% density)
+		 * BITBOARD sparse = bbalg::gen_random_block(0.1);
+		 * @endcode
+		 */
+		BITBOARD gen_random_block(double p) noexcept;
 
 		/**
-		* @brief determines the first k 1-bits in the bitset bb
-		* @param k: the number of bits to find
-		* @param bb: the input bitset
-		* @param lv: the output vector of integers
-		* @returns the number of bits found in lv
-		* @details: used in BBMWCP for upper bound computation
-		**/
+		 * @brief Extracts the first k set bits from a bitset
+		 * @tparam BitSet_t Any bitset type supporting init_scan() and next_bit()
+		 * @param k Maximum number of bits to extract
+		 * @param bb Input bitset (not modified)
+		 * @param[out] lv Output vector to store bit positions (cleared first)
+		 * @return Actual number of bits found (min(k, popcount(bb)))
+		 * 
+		 * @pre k >= 0
+		 * @post lv.size() == return value <= k
+		 * @post lv contains first return_value bit positions in ascending order
+		 * 
+		 * @par Complexity
+		 * O(min(k, popcount(bb))) - stops after k bits or when bitset exhausted
+		 * 
+		 * @par Application
+		 * Used in Maximum Weight Clique Problem (MWCP) for computing upper bounds
+		 * by selecting the k heaviest vertices from a candidate set.
+		 * 
+		 * @par Example
+		 * @code{.cpp}
+		 * BBScan candidates(1000);
+		 * // ... populate candidates ...
+		 * 
+		 * std::vector<int> top_vertices;
+		 * int found = bbalg::first_k_bits(10, candidates, top_vertices);
+		 * // top_vertices contains up to 10 vertex indices
+		 * @endcode
+		 */
 		template<class BitSet_t>
 		int first_k_bits(int k, BitSet_t& bb, std::vector<int>& lv);
 
@@ -69,70 +170,176 @@ namespace bitgraph {
 
 	namespace _impl {
 
-		//////////////////////
-		// 
-		// bbSize_t class
-		// 
-		// A very simple wrapper for any type of bitset of the BBObject hierarchy with CACHED size 
-		// 
-		///////////////////////
+		/**
+		 * @class bbSize_t
+		 * @brief Bitset wrapper with cached population count for O(1) size queries
+		 * @tparam BitSet_t Any bitset type from BBObject hierarchy
+		 * 
+		 * @details Maintains an explicit population count (pc_) synchronized with
+		 * the underlying bitset, eliminating the O(n/64) cost of computing size.
+		 * This optimization is critical for algorithms that frequently query bitset
+		 * cardinality, such as branch-and-bound procedures.
+		 * 
+		 * **Performance Characteristics:**
+		 * - size(): O(1) instead of O(n/64)
+		 * - set_bit()/erase_bit(): O(1) with counter update
+		 * - Memory overhead: 8 bytes for counter
+		 * 
+		 * **Synchronization:**
+		 * - Manual sync via sync_pc() if bitset modified directly
+		 * - is_sync_pc() verifies counter accuracy
+		 * 
+		 * @warning Direct manipulation of bb_ member requires sync_pc() call
+		 * 
+		 * @par Example
+		 * @code{.cpp}
+		 * bbSize_t<BBScan> cached_bs(1000);
+		 * cached_bs.set_bit(42);     // O(1), updates counter
+		 * cached_bs.set_bit(100);
+		 * 
+		 * if (cached_bs.size() > 1) {  // O(1) check
+		 *     int first = cached_bs.lsb();
+		 * }
+		 * @endcode
+		 */
 		template <class BitSet_t>
 		struct bbSize_t {
 
-			//construction / destruction
-			bbSize_t(int MAX_SIZE) : pc_(0), bb_(MAX_SIZE) {}
+			/**
+			 * @brief Constructs wrapper with specified capacity
+			 * @param MAX_SIZE Maximum number of bits
+			 */
+			explicit bbSize_t(int MAX_SIZE) : pc_(0), bb_(MAX_SIZE) {}
+			
+			/**
+			 * @brief Default constructor
+			 */
 			bbSize_t() : pc_(0) {}
 
-			//move and copy semantics allowed
+			// Copy and move semantics preserved from underlying BitSet_t
+			bbSize_t(const bbSize_t&) = default;
+			bbSize_t& operator=(const bbSize_t&) = default;
+			bbSize_t(bbSize_t&&) noexcept = default;
+			bbSize_t& operator=(bbSize_t&&) noexcept = default;
 
 		//allocation
 
 			/**
-			* @brief Resets the original bitset and allocated new capacity
-			**/
+			 * @brief Resets bitset with new capacity and clears counter
+			 * @param MAX_SIZE New maximum number of bits
+			 * @post pc_ == 0 and bb_ reallocated
+			 */
 			void reset(int MAX_SIZE) { bb_.reset(MAX_SIZE); pc_ = 0; }
 
 			/**
-			* @brief Equivalent to reset. Preserved for backward compatibility
-			**/
-			void init(int MAX_SIZE) { bb_.reset(MAX_SIZE); pc_ = 0; }
-
-			//setters and getters
-			BITBOARD  size()	const { return pc_; }
-
-			//bit twiddling
-			void set_bit(int bit) { bb_.set_bit(bit); ++pc_; }
-			int  erase_bit(int bit) { bb_.erase_bit(bit); return(--pc_); }
+			 * @brief Equivalent to reset() for backward compatibility
+			 * @deprecated Use reset() instead
+			 */
+			void init(int MAX_SIZE) { reset(MAX_SIZE); }
 
 			/**
-			* @brief clears all 1-bits. If lazy is true, the bitset is not modified.
-			**/
+			 * @brief Returns cached population count
+			 * @return Number of set bits
+			 * @par Complexity: O(1)
+			 */
+			BITBOARD size() const noexcept { return pc_; }
+
+			/**
+			 * @brief Sets bit and increments counter
+			 * @param bit Position to set
+			 * @pre bit < capacity and !is_bit(bit)
+			 * @post is_bit(bit) == true and pc_ incremented
+			 */
+			void set_bit(int bit) { bb_.set_bit(bit); ++pc_; }
+			
+			/**
+			 * @brief Erases bit and decrements counter
+			 * @param bit Position to clear
+			 * @return Updated population count
+			 * @pre is_bit(bit) == true
+			 * @post is_bit(bit) == false and pc_ decremented
+			 */
+			int erase_bit(int bit) { bb_.erase_bit(bit); return(--pc_); }
+
+			/**
+			 * @brief Clears all bits and resets counter
+			 * @param lazy If true, only resets counter without clearing bitset
+			 * @post pc_ == 0, bb_ cleared unless lazy == true
+			 * @warning lazy=true causes desynchronization, use with caution
+			 */
 			void erase_bit(bool lazy = false) { if (!lazy) { bb_.erase_bit(); } pc_ = 0; }
 
 
-			//useful operations
-			int lsb() { if (pc_ > 0) { return bb_.lsb(); } else return BBObject::noBit; }
-			int msb() { if (pc_ > 0) { return bb_.msb(); } else return BBObject::noBit; }
+			/**
+			 * @brief Finds least significant bit
+			 * @return Position of first set bit or BBObject::noBit if empty
+			 * @par Complexity: O(1) with hardware support, O(n/64) otherwise
+			 */
+			int lsb() const noexcept { 
+				return (pc_ > 0) ? bb_.lsb() : BBObject::noBit; 
+			}
+			
+			/**
+			 * @brief Finds most significant bit
+			 * @return Position of last set bit or BBObject::noBit if empty
+			 * @par Complexity: O(1) with hardware support, O(n/64) otherwise
+			 */
+			int msb() const noexcept { 
+				return (pc_ > 0) ? bb_.msb() : BBObject::noBit; 
+			}
 
 			/**
-			* @brief pops the most significant bit. If the bitset is empty, returns BBObject::noBit
-			**/
+			 * @brief Removes and returns most significant bit
+			 * @return Position of removed bit or BBObject::noBit if empty
+			 * @post pc_ decremented if bit was found
+			 * @par Complexity: O(1) with hardware support
+			 */
 			int pop_msb() {
-				if (pc_ > 0) { int bit = bb_.msb(); bb_.erase_bit(bit); pc_--; return bit; } \
-				else return BBObject::noBit;
+				if (pc_ > 0) { 
+					int bit = bb_.msb(); 
+					bb_.erase_bit(bit); 
+					--pc_; 
+					return bit; 
+				}
+				return BBObject::noBit;
 			}
+			
 			/**
-			* @brief pops the least significant bit. If the bitset is empty, returns BBObject::noBit
-			**/
+			 * @brief Removes and returns least significant bit
+			 * @return Position of removed bit or BBObject::noBit if empty
+			 * @post pc_ decremented if bit was found
+			 * @par Complexity: O(1) with hardware support
+			 */
 			int pop_lsb() {
-				if (pc_ > 0) { int bit = bb_.lsb(); bb_.erase_bit(bit); pc_--; return bit; } \
-				else return BBObject::noBit;
+				if (pc_ > 0) { 
+					int bit = bb_.lsb(); 
+					bb_.erase_bit(bit); 
+					--pc_; 
+					return bit; 
+				}
+				return BBObject::noBit;
 			}
 
+			/**
+			 * @brief Synchronizes counter with actual bitset population
+			 * @return Updated population count
+			 * @post pc_ == bb_.size()
+			 * @par Complexity: O(n/64)
+			 */
 			int sync_pc() { pc_ = bb_.size(); return pc_; }
 
-			//bool
-			bool is_empty() const { return (pc_ == 0); }
+			/**
+			 * @brief Checks if bitset is empty using cached counter
+			 * @return true if no bits are set
+			 * @par Complexity: O(1)
+			 */
+			bool is_empty() const noexcept { return (pc_ == 0); }
+			
+			/**
+			 * @brief Verifies counter synchronization
+			 * @return true if cached count matches actual population
+			 * @par Complexity: O(n/64)
+			 */
 			bool is_sync_pc() const { return (pc_ == bb_.size()); }
 
 			//operators
@@ -374,27 +581,33 @@ namespace bitgraph {
 		template <class BitSet_t>
 		inline
 			bool bbStack_t<BitSet_t>::is_sync() {
-
-			if (bb_.size() != stack_.size()) { return false; }
-
-			//checks if exactly the population of bb_ is in the STACK  
-			for (auto i = 0; i < stack_.size(); ++i) {
-				if (!bb_.is_bit(stack_[i])) {
-					return false;
+				if (bb_.size() != stack_.size()) { 
+					return false; 
 				}
-			}
 
-			return true;
+				//CODIGO ORIGINAL
+				//checks if exactly the population of bb_ is in the STACK  
+				// for (auto i = 0; i < stack_.size(); ++i) {
+				// 	if (!bb_.is_bit(stack_[i])) {
+				// 		return false;
+				// 	}
+				// }
+
+				return std::all_of(stack_.begin(), stack_.end(),
+					[this](int bit) { return bb_.is_bit(bit); });
 		}
 
 		template <class BitSet_t>
 		inline
 			void bbStack_t<BitSet_t>::sync_bb() {
-
-			bb_.erase_bit();
-			for (auto i = 0; i < stack_.size(); i++) {
-				bb_.set_bit(stack_[i]);
-			}
+				bb_.erase_bit();
+				//CODIGOI ORIGINAL
+				// 	for (auto i = 0; i < stack_.size(); i++) {
+				// 	bb_.set_bit(stack_[i]);
+				// }
+				for (int bit : stack_) {
+					bb_.set_bit(bit);
+				}
 		}
 
 		template <class BitSet_t>
@@ -464,9 +677,13 @@ namespace bitgraph {
 		template <class BitSet_t>
 		inline
 			void bbStack_t<BitSet_t>::erase_bit() {
-			for (int i = 0; i < stack_.size(); i++) {
+				//CODIGO ORIGINAL
+				for (int i = 0; i < stack_.size(); i++) {
 				bb_.erase_bit(stack_[i]);
-			}
+				}
+				for (int bit : stack_) {
+					bb_.erase_bit(bit);
+				}
 		}
 
 
@@ -505,7 +722,7 @@ namespace bitgraph {
 
 
 		inline
-			BITBOARD gen_random_block(double p) {
+			BITBOARD gen_random_block(double p) noexcept {
 
 			BITBOARD bb = 0;
 
@@ -529,9 +746,10 @@ namespace bitgraph {
 
 			int nBits = 0;
 			int bit = BBObject::noBit;
-			while ((bit = bb.next_bit()) != BBObject::noBit || nBits < k) {
+			// Fixed bug: condition should be AND not OR
+			while ((bit = bb.next_bit()) != BBObject::noBit && nBits < k) {
 				lv.emplace_back(bit);
-				nBits++;
+				++nBits;
 			}
 
 			//number of bits found (ideally the first-k)

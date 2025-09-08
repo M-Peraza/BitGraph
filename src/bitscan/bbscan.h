@@ -1,13 +1,22 @@
- /**
-  * @file bbscan.h file
-  * @brief header file of the BBScan class from the BITSCAN library.
-  *		   Manages efficient bitscanning. An alternative is using the nested bitscanning classes in BBObject
-  * @details Use external scanning feature for commodity. Use this class for specific tuning of bitscans
-  * @details last_updated 13/02/2025
-  * @author pss
-  * 
-  * TODO - Compare efficiency with nested bitscanning classes in BBObject (13/02/2025)
-  **/
+/**
+ * @file bbscan.h
+ * @brief High-performance bitscanning operations with cached state management
+ * @author Pablo San Segundo
+ * @version 1.0
+ * @date 2025
+ * @since 13/02/2025
+ * 
+ * @details Provides BBScan class for efficient bitscanning with cached scan state.
+ * Extends BitSet with optimized scanning capabilities that maintain position
+ * information between scan operations, significantly improving performance
+ * for iterative bit enumeration.
+ * 
+ * **Alternative Approaches:**
+ * - Nested scanning classes in BBObject for convenience
+ * - This class for fine-tuned performance control
+ * 
+ * @todo Compare efficiency with nested bitscanning classes in BBObject (13/02/2025)
+ **/
 
 #ifndef __BBSCAN_H__
 #define __BBSCAN_H__
@@ -19,16 +28,38 @@
 namespace bitgraph{
 
 	namespace _impl {
-		/////////////////////////////////
-		//
-		// Class BBScan
-		// 
-		// (Efficient bit scanning)
-		// 
-		/////////////////////////////////
-
+		/**
+		 * @class BBScan
+		 * @brief High-performance bitset with cached scanning state
+		 * @details Extends BitSet with optimized bitscanning capabilities that cache
+		 * scan position between operations. Provides both destructive and non-destructive
+		 * scanning modes in forward and reverse directions.
+		 * 
+		 * **Performance Benefits:**
+		 * - Cached scan state eliminates position recomputation
+		 * - O(1) continuation of scan operations  
+		 * - Multiple scan modes for different algorithmic needs
+		 * - Template friend integration with BBObject scanning classes
+		 * 
+		 * **Inheritance:** Extends BitSet with scanning-specific functionality
+		 */
 		class BBScan : public BitSet {
 		public:
+
+			/**
+			 * @defgroup ScanManagement Scan State Management and Construction
+			 * @brief Functions for managing scan state, construction, and initialization
+			 * @details This group encompasses all operations related to scan state management,
+			 * object construction/destruction, and scanning initialization. Includes cached
+			 * state management, move semantics, and scan configuration operations.
+			 * 
+			 * **Key Features:**
+			 * - Cached scan state for O(1) continuation
+			 * - Template friend integration with BBObject scanning classes
+			 * - Move semantics for efficient scan state transfers
+			 * - Multiple scan mode initialization (destructive/non-destructive, forward/reverse)
+			 * @{
+			 */
 
 			template <class U>
 			friend struct BBObject::Scan;
@@ -39,18 +70,13 @@ namespace bitgraph{
 			template <class U>
 			friend struct BBObject::ScanDestRev;
 
-		public:
-
 			//aliases for bitscanning 
 			using scan = typename BBObject::Scan<BBScan>;
 			using scanR = typename BBObject::ScanRev<BBScan>;
 			using scanD = typename BBObject::ScanDest<BBScan>;
 			using scanDR = typename BBObject::ScanDestRev<BBScan>;
 
-			//////////////////////////////
-			//construction / destruction
-
-				//inherit constructors	
+			//inherit constructors	
 			using BitSet::BitSet;
 
 			//TODO...check copy and move assignments->Done
@@ -108,9 +134,21 @@ namespace bitgraph{
 			**/
 			inline	int init_scan(int firstBit, scan_types sct) noexcept ;
 
+			/** @} */ // end ScanManagement group
 
-			////////////////
-			// bitscan forwards
+			/**
+			 * @defgroup ForwardScanning Forward Bit Scanning Operations
+			 * @brief Functions for forward bit enumeration with cached state
+			 * @details This group contains all forward scanning operations (next_bit variants)
+			 * that traverse the bitset from low to high bit positions. Supports both
+			 * destructive and non-destructive scanning modes with efficient state caching.
+			 * 
+			 * **Scanning Modes:**
+			 * - Destructive: Removes bits as they are scanned (next_bit_del)
+			 * - Non-destructive: Preserves bits during scanning (next_bit)
+			 * - Dual-bitset variants for selective bit removal
+			 * @{
+			 */
 			/**
 			* @brief next bit in the bitstring, starting from the block
 			*		 in the last call to next_bit.
@@ -186,8 +224,21 @@ namespace bitgraph{
 			**/
 			virtual inline	 int next_bit(BBScan& bitset);
 
-			////////////////
-			// bitscan backwards
+			/** @} */ // end ForwardScanning group
+
+			/**
+			 * @defgroup ReverseScanning Reverse Bit Scanning Operations  
+			 * @brief Functions for reverse bit enumeration with cached state
+			 * @details This group contains all reverse scanning operations (prev_bit variants)
+			 * that traverse the bitset from high to low bit positions. Supports both
+			 * destructive and non-destructive scanning modes with efficient state caching.
+			 * 
+			 * **Scanning Modes:**
+			 * - Destructive: Removes bits as they are scanned (prev_bit_del)
+			 * - Non-destructive: Preserves bits during scanning (prev_bit)
+			 * - Dual-bitset variants for selective bit removal
+			 * @{
+			 */
 
 			/**
 			* @brief next least-significant bit in the bitstring, starting from the bit retrieved
@@ -241,9 +292,13 @@ namespace bitgraph{
 			**/
 			virtual inline int prev_bit_del(BBScan& bitset);
 
+			/** @} */ // end ReverseScanning group
 
-			//////////////////
-			/// data members
+			/**
+			 * @brief Internal scan state storage
+			 * @details Protected member containing cached scan position for efficient
+			 * continuation of bitscanning operations across multiple function calls.
+			 */
 		protected:
 			scan_t scan_;
 		};

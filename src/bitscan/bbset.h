@@ -1,13 +1,25 @@
 /**  
- * @file bbset.h file 
- * @brief header file of the BitSet class from the BITSCAN library.
- *		  Manages bitstrings of any size as an array of bitblocks (64-bit numbers)
- * @author pss
- * @details: Created 2014, last_update 01/02/2025
- * @details: This type has all the abilities except efficient bitscanning,which requires 
- *			 an additional data structure. It does have a basic bitscanning feature.
- * @details  For efficient bitscanning use the BBScan class or the external feature in the
- *			 namespace bbscan.
+ * @file bbset.h
+ * @brief Dense bitset implementation for arbitrary-size bit strings
+ * @author Pablo San Segundo
+ * @version 1.0
+ * @date 2025
+ * @since 01/02/2025
+ * 
+ * @details Manages bitstrings of any size as an array of 64-bit bitblocks.
+ * This class provides all standard bitset operations except highly optimized
+ * bitscanning, which requires additional data structures available in BBScan.
+ * 
+ * **Key Features:**
+ * - Arbitrary-size bitsets using dynamic memory allocation
+ * - STL algorithm integration for compiler optimizations  
+ * - Move semantics for efficient memory management
+ * - Cross-platform compatibility without hardware intrinsics
+ * 
+ * **Performance Notes:**
+ * - Basic bitscanning available but not optimized
+ * - For high-performance scanning, use BBScan class or external features
+ * - STL algorithms enable vectorization and aggressive compiler optimization
  **/
 
 #ifndef __BBSET_H__
@@ -41,21 +53,41 @@ namespace bitgraph {
 
 	namespace _impl {
 
-		/////////////////////////////////
-		//
-		// BitSet class 
-		//
-		// Manages bit strings greater than WORD_SIZE 
-		// @details Does not use HW dependent instructions (intrinsics), nor does it cache information for very fast bitscanning
-		//
-		///////////////////////////////////
+		/**
+		 * @class BitSet
+		 * @brief Dense bitset implementation for arbitrary-size bit manipulation
+		 * @details Manages bit strings of any size using an array of 64-bit blocks.
+		 * Provides comprehensive bitset operations without hardware dependencies,
+		 * making it portable across platforms. Optimized using STL algorithms
+		 * for modern compiler vectorization.
+		 * 
+		 * **Design Philosophy:**
+		 * - Platform independence (no hardware intrinsics)
+		 * - STL algorithm integration for optimization
+		 * - Move semantics for efficient memory operations
+		 * - Basic bitscanning (use BBScan for high-performance scanning)
+		 * 
+		 * **Inheritance:** Inherits from BBObject for common interface
+		 */
 		class BitSet :public BBObject {
 
 		public:
 
-			/////////////////////////////
-			// Independent operators / masks  
-			// comment: do not modify this bitset
+			/**
+			 * @defgroup BitsetOperations Binary Set Operations
+			 * @brief Friend functions for bitwise operations between BitSet objects
+			 * @details This group contains all binary operations (AND, OR, XOR, etc.) that
+			 * operate on pairs of BitSet objects. These functions support both in-place
+			 * and result-returning variants, with template specializations for range
+			 * operations and selective bit manipulation.
+			 * 
+			 * **Operation Categories:**
+			 * - Basic binary operations (AND, OR, XOR, MINUS)
+			 * - Range-based operations with bit/block boundaries
+			 * - Template variants with selective erase functionality
+			 * - Both in-place and copy-returning versions
+			 * @{
+			 */
 
 				/**
 				* @brief AND between lhs and rhs bitsets, stores the result in an existing bitset res
@@ -175,39 +207,23 @@ namespace bitgraph {
 			friend BitSet  XOR	(BitSet lhs, const BitSet& rhs){ 
 				return lhs ^= rhs; }
 
-			/**
-			* @brief Removes the 1-bits in the bitstring rhs from the bitstring lhs. Stores
-			*		 the result in res.
-			* @returns reference to the resulting bitstring res
-			**/
-			friend BitSet& erase_bit(const BitSet& lhs, const BitSet& rhs, BitSet& res);										//removes rhs from lhs
-			
-			// NUEVA IMPLEMENTACION
-			/**
-			* @brief Removes the 1-bits in rhs from lhs
-			* @details Takes lhs by value to enable move semantics
-			* @returns resulting bitset
-			**/
-			friend BitSet  erase_bit(BitSet lhs, const BitSet& rhs){ 
-				lhs.erase_bit(rhs); 
-				return lhs; }
+
+			/** @} */ // end BitsetOperations group
 
 			/**
-			* @brief Determines the first bit of the itersection between bitsets lhs and rhs
-			* @param lhs, rhs: input bitsets
-			* @returns the first bit of the intersection or BBObject::noBit if the sets are disjoint
-			**/
-			friend int find_first_common(const BitSet& lhs, const BitSet& rhs);
-
-			/**
-			* @brief Determines the first bit of the itersection between bitsets lhs and rhs
-			*		 in the closed block-range [firstBlock, lastBlock].
-			*		 If lastBock == -1, the range [firstBlock, END OF BITSET)
-			* @param lhs, rhs: input bitsets
-			* @returns the first bit of the intersection or BBObject::noBit if the sets are disjoint
-			**/
-			friend int find_first_common_block(int firstBlock, int lastBlock, const BitSet& lhs, const BitSet& rhs);
-
+			 * @defgroup BitsetMemory Memory Management and Initialization
+			 * @brief Functions for allocation, initialization, and capacity management
+			 * @details This group encompasses all operations related to memory allocation,
+			 * bitset initialization from various sources, and capacity management. 
+			 * Includes constructors, destructors, reset functions, and memory optimization.
+			 * 
+			 * **Key Features:**
+			 * - Dynamic memory allocation based on bit capacity
+			 * - Initialization from vectors of bit positions  
+			 * - Memory reallocation and optimization (shrink_to_fit)
+			 * - Move semantics for efficient transfers
+			 * @{
+			 */
 
 			////////////
 			//construction / destruction 
@@ -276,9 +292,6 @@ namespace bitgraph {
 			}
 
 			virtual	~BitSet() = default;
-
-			////////////
-			//Reset / init (memory allocation)
 			void init(int nPop);
 			void init(int nPop, const vint& lv);
 
@@ -310,8 +323,23 @@ namespace bitgraph {
 			**/
 			void  shrink_to_fit() { vBB_.shrink_to_fit(); }
 
-			/////////////////////
-			//setters and getters (will not allocate memory)
+			/** @} */ // end BitsetMemory group
+
+			/**
+			 * @defgroup BitsetAccess Access and Query Operations  
+			 * @brief Functions for accessing bits, blocks, and bitset properties
+			 * @details This group includes all non-modifying operations for accessing
+			 * bitset data, querying properties, and retrieving information about
+			 * the bitset state. Covers bit scanning, population counting, and
+			 * direct bit/block access functions.
+			 * 
+			 * **Operation Categories:**
+			 * - Capacity and block access (number_of_blocks, capacity, block access)
+			 * - Bit scanning operations (next_bit, prev_bit)
+			 * - Population counting (size, popcn64)
+			 * - Bit testing and queries (is_bit, is_empty, etc.)
+			 * @{
+			 */
 
 			int number_of_blocks()const { return nBB_; }
 
@@ -414,10 +442,41 @@ namespace bitgraph {
 			**/
 			virtual	inline int popcn64(int firstBit, int lastBit = -1)	const;
 
+			
+			/**
+			* @brief Determines the first bit of the itersection between bitsets lhs and rhs
+			* @param lhs, rhs: input bitsets
+			* @returns the first bit of the intersection or BBObject::noBit if the sets are disjoint
+			**/
+			friend int find_first_common(const BitSet& lhs, const BitSet& rhs);
 
-			/////////////////////
-			//Setting / Erasing bits 
-		public:
+			/**
+			* @brief Determines the first bit of the itersection between bitsets lhs and rhs
+			*		 in the closed block-range [firstBlock, lastBlock].
+			*		 If lastBock == -1, the range [firstBlock, END OF BITSET)
+			* @param lhs, rhs: input bitsets
+			* @returns the first bit of the intersection or BBObject::noBit if the sets are disjoint
+			**/
+			friend int find_first_common_block(int firstBlock, int lastBlock, const BitSet& lhs, const BitSet& rhs);
+
+			/** @} */ // end BitsetAccess group
+			
+			public:
+			/**
+			 * @defgroup BitsetModification Bit Manipulation and Modification Operations
+			 * @brief Functions for setting, clearing, and modifying individual bits and ranges
+			 * @details This group contains all operations that modify the bitset state,
+			 * including bit setting/clearing, range operations, assignment operators,
+			 * and in-place bitwise operations. These functions directly change the
+			 * internal bit representation.
+			 * 
+			 * **Operation Categories:**
+			 * - Single bit operations (set_bit, erase_bit, flip_bit)
+			 * - Range operations (set_bit ranges, erase_bit ranges)
+			 * - Assignment operators (|=, &=, ^=, etc.)
+			 * - Batch operations and block-level modifications
+			 * @{
+			 */
 
 
 			/**
@@ -755,8 +814,31 @@ namespace bitgraph {
 			**/
 			inline bool is_disjoint(const BitSet& lhs, const  BitSet& rhs)	const;
 
-			/////////////////////
-			// I/O 
+		
+			/**
+			* @brief Removes the 1-bits in the bitstring rhs from the bitstring lhs. Stores
+			*		 the result in res.
+			* @returns reference to the resulting bitstring res
+			**/
+			friend BitSet& erase_bit(const BitSet& lhs, const BitSet& rhs, BitSet& res);										//removes rhs from lhs
+			
+			// NUEVA IMPLEMENTACION
+			/**
+			* @brief Removes the 1-bits in rhs from lhs
+			* @details Takes lhs by value to enable move semantics
+			* @returns resulting bitset
+			**/
+			friend BitSet  erase_bit(BitSet lhs, const BitSet& rhs){ 
+				lhs.erase_bit(rhs); 
+				return lhs; }
+
+			/** @} */ // end BitsetModification group
+
+			/**
+			 * @brief Input/output operations for BitSet debugging and display
+			 * @details Functions for printing bitset contents and population counts
+			 * in various formats for debugging and visualization purposes.
+			 */ 
 				/**
 				* @brief streams bb and its popcount to the output stream o
 				* @details format example [...000111 (3)]
@@ -814,7 +896,6 @@ namespace bitgraph {
 		protected:
 			int nBB_;							//number of bitblocks 
 			std::vector<BITBOARD> vBB_;			//bitset
-
 
 
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////

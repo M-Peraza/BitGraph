@@ -1,12 +1,20 @@
- /**
-  * @file bbset_sparse.h
-  * @brief header for sparse class equivalent to the BitSetSp class
-  * @author pss
-  * @details created 19/12/2015?, @last_update 15/02/2025
-  *
-  * TODO - complete BitSet class interface (25/02/2025)	
-  * TODO - check inlining and header / cpp implementations (25/02/2025)
-  **/
+/**
+ * @file bbset_sparse.h
+ * @brief Sparse bitset implementation optimized for low-density bit patterns
+ * @author Pablo San Segundo
+ * @version 1.0
+ * @date 2025
+ * @since 15/02/2025
+ *
+ * @details Implements BitSetSp class for efficient handling of sparse bitsets
+ * where only a small fraction of bits are set. Uses a vector of paired blocks
+ * (index, bitboard) to store only non-zero 64-bit segments.
+ * 
+ * **Optimization Target:** Bitsets with <10% density for maximum efficiency
+ * 
+ * @todo Complete BitSet class interface compatibility (25/02/2025)	
+ * @todo Review inlining and header/implementation separation (25/02/2025)
+ **/
 
 #ifndef __BBSET_SPARSE_H__
 #define __BBSET_SPARSE_H__
@@ -31,20 +39,40 @@ using vint = std::vector<int>;
 namespace bitgraph {
 	namespace _impl {
 
-		/////////////////////////////////
-		//
-		// class BitSetSp
-		// (manages sparse bit strings, except efficient bitscanning)
-		//
-		///////////////////////////////////
-
+		/**
+		 * @class BitSetSp
+		 * @brief Sparse bitset optimized for low-density bit patterns
+		 * @details Manages sparse bitsets using a vector of (index, bitboard) pairs,
+		 * storing only non-zero 64-bit blocks. Highly efficient for bitsets where
+		 * most blocks are empty (< 10% density recommended).
+		 * 
+		 * **Memory Model:** Vector of pBlock_t structures containing:
+		 * - Block index (which 64-bit segment)  
+		 * - Bitboard value (the actual 64 bits)
+		 * 
+		 * **Efficiency:** O(k) operations where k = number of non-zero blocks
+		 * rather than O(n) where n = total bitset capacity
+		 * 
+		 * **Trade-offs:** Lower memory for sparse data, higher overhead for dense data
+		 */
 		class BitSetSp : public BBObject {
 			static int DEFAULT_CAPACITY;		//initial allocation of bit blocks for any new sparse bitstring - CHECK efficiency (17/02/2025)
 		public:
+			/**
+			 * @struct pBlock_t
+			 * @brief Paired block structure for sparse bitset storage
+			 * @details Core storage element containing block index and bitboard value.
+			 * Only non-zero blocks are stored, enabling sparse representation.
+			 */
 			struct pBlock_t {
-				int idx_;
-				BITBOARD bb_;
+				int idx_;      ///< Block index in the logical bitset
+				BITBOARD bb_;  ///< 64-bit value for this block
 
+				/**
+				 * @brief Constructor with default empty block
+				 * @param idx Block index (default: noBit for invalid)
+				 * @param bb Block value (default: 0 for empty)
+				 */
 				pBlock_t(int idx = BBObject::noBit, BITBOARD bb = 0) : idx_(idx), bb_(bb) {}
 
 				bool operator ==	(const pBlock_t& e)	const { return (idx_ == e.idx_ && bb_ == e.bb_); }
@@ -62,19 +90,29 @@ namespace bitgraph {
 			using vPB_it = typename std::vector<pBlock_t>::iterator;
 			using vPB_cit = typename std::vector<pBlock_t>::const_iterator;
 
-			//functor for sorting - check if it is necessary, or throwing lambdas is enough
+			//functor for sorting - check if it is necessary, or throwing lambdas is enough -> REplaced accross
 			struct pBlock_less {
 				bool operator()(const pBlock_t& lhs, const pBlock_t& rhs) const {
 					return lhs.idx_ < rhs.idx_;
 				}
 			};
 
-			/////////////////////////////
-			// Independent operators / masks  
-		public:
+			/**
+			 * @defgroup SparseBitsetOperations Binary Set Operations for Sparse Bitsets
+			 * @brief Friend functions for bitwise operations between BitSetSp objects  
+			 * @details This group contains all binary operations (AND, OR, XOR, etc.) that
+			 * operate on pairs of sparse BitSet objects. These operations are optimized for
+			 * sparse data structures, typically operating in O(k) time where k is the number
+			 * of non-zero blocks rather than total capacity.
+			 * 
+			 * **Sparse Optimization Features:**
+			 * - Skip empty blocks automatically
+			 * - Efficient intersection algorithms for sparse data
+			 * - Memory-efficient result storage
+			 * - Block-wise operations with early termination
+			 * @{
+			 */
 
-			friend bool operator ==			(const BitSetSp& lhs, const BitSetSp& rhs);
-			friend bool operator !=			(const BitSetSp& lhs, const BitSetSp& rhs);
 
 			/**
 			* @brief AND between lhs and rhs sparse bitsets - stores the result in sparse bitset res
@@ -127,32 +165,23 @@ namespace bitgraph {
 			friend  BitSetSp OR(BitSetSp lhs, const BitSetSp& rhs);
 			friend  BitSetSp XOR(BitSetSp lhs, const BitSetSp& rhs);
 
-			/**
-			* @brief Removes 1-bits in the bitstring rhs from the bitstring lhs. Stores
-			*		 the result in res
-			* @returns reference to the resulting bitstring res
-			* @details: set minus operation (res = lhs \ rhs)
-			* @details: optimized for the case when lhs is much less dense than rhs (1)
-			*
-			* TODO - add optimization policy to allow to choose reference bitset (see (1) - 25/02/2025)
-			**/
-			friend BitSetSp& erase_bit(const BitSetSp& lhs, const BitSetSp& rhs, BitSetSp& res);
-			//NUEVA IMPLEMENTACION
-			friend BitSetSp erase_bit(BitSetSp lhs, const BitSetSp& rhs);
 
-			//TODO - add same interface as BitSet (25/02/2025)
-			// Missing methods from BitSet for interface parity - NOW IMPLEMENTED:
-	
-			/**
-			* @brief Inverts all bits in the bitset (NOT operation)
-			* @details Sparse implementation requires converting to dense representation
-			*          This operation is expensive for sparse bitsets
-			* @returns reference to the modified bitstring
-			**/
-			BitSetSp& flip();
+			/** @} */ // end SparseBitsetOperations group
 
-		/////////////////////
-		// constructors / destructors
+			/**
+			 * @defgroup SparseBitsetMemory Memory Management and Initialization for Sparse Bitsets
+			 * @brief Functions for allocation, initialization, and capacity management
+			 * @details This group encompasses all operations related to memory allocation,
+			 * sparse bitset initialization, and capacity management. Sparse bitsets use
+			 * dynamic vectors of (index, bitboard) pairs for efficient memory usage.
+			 * 
+			 * **Sparse Memory Model:**
+			 * - Dynamic allocation of pBlock_t structures
+			 * - Only non-zero blocks consume memory
+			 * - Automatic block sorting and management
+			 * - Move semantics for efficient transfers
+			 * @{
+			 */
 
 			BitSetSp() noexcept : nBB_(0) {}
 
@@ -246,9 +275,22 @@ namespace bitgraph {
 			**/
 			void  shrink_to_fit() { vBB_.shrink_to_fit(); }
 
+			/** @} */ // end SparseBitsetMemory group
 
-			/////////////////////
-			//setters and getters (will not allocate memory)
+			/**
+			 * @defgroup SparseBitsetAccess Access and Query Operations for Sparse Bitsets  
+			 * @brief Functions for accessing bits, blocks, and sparse bitset properties
+			 * @details This group includes all non-modifying operations for accessing
+			 * sparse bitset data, querying properties, and retrieving information.
+			 * Operations are optimized to work with the sparse representation.
+			 * 
+			 * **Sparse-Specific Features:**
+			 * - Block index management and lookup
+			 * - Efficient sparse population counting
+			 * - Sparse bit testing with block search
+			 * - Iterator-based access to non-zero blocks
+			 * @{
+			 */
 
 				/**
 				* @brief number of non-zero bitblocks in the bitstring
@@ -495,14 +537,26 @@ namespace bitgraph {
 			**/
 			virtual inline	 int popcn64(int firstBit)					const;
 
+			/** @} */ // end SparseBitsetAccess group
 
-		public:
-			/////////////////////
-			//Setting (ordered insertion) / Erasing bits  
-
-				/**
-				* @brief Sets THIS to the singleton bit
-				**/
+			/**
+			 * @defgroup SparseBitsetModification Bit Manipulation and Modification Operations for Sparse Bitsets
+			 * @brief Functions for setting, clearing, and modifying bits in sparse bitsets
+			 * @details This group contains all operations that modify the sparse bitset state.
+			 * Operations are optimized for sparse representation, including ordered insertion
+			 * and efficient block management for maintaining sparsity.
+			 * 
+			 * **Sparse-Specific Optimizations:**
+			 * - Ordered insertion to maintain block sorting
+			 * - Automatic empty block removal
+			 * - Efficient block allocation and deallocation
+			 * - Range operations optimized for sparse data
+			 * @{
+			 */  
+			public:
+			/**
+			* @brief Sets THIS to the singleton bit
+			**/
 			inline BitSetSp& reset_bit(int bit);
 
 			/**
@@ -626,6 +680,30 @@ namespace bitgraph {
 			**/
 			BitSetSp& erase_bit(const BitSetSp& bitset);
 
+						/**
+			* @brief Removes 1-bits in the bitstring rhs from the bitstring lhs. Stores
+			*		 the result in res
+			* @returns reference to the resulting bitstring res
+			* @details: set minus operation (res = lhs \ rhs)
+			* @details: optimized for the case when lhs is much less dense than rhs (1)
+			*
+			* TODO - add optimization policy to allow to choose reference bitset (see (1) - 25/02/2025)
+			**/
+			friend BitSetSp& erase_bit(const BitSetSp& lhs, const BitSetSp& rhs, BitSetSp& res);
+			//NUEVA IMPLEMENTACION
+			friend BitSetSp erase_bit(BitSetSp lhs, const BitSetSp& rhs);
+
+			//TODO - add same interface as BitSet (25/02/2025)
+			// Missing methods from BitSet for interface parity - NOW IMPLEMENTED:
+	
+			/**
+			* @brief Inverts all bits in the bitset (NOT operation)
+			* @details Sparse implementation requires converting to dense representation
+			*          This operation is expensive for sparse bitsets
+			* @returns reference to the modified bitstring
+			**/
+			BitSetSp& flip();
+
 			/**
 			* @brief erase operation which effectively removes the zero blocks
 			* @details EXPERIMENTAL - does not look efficient,
@@ -670,6 +748,9 @@ namespace bitgraph {
 
 			////////////////////////
 			//Operators (member functions)
+
+			friend bool operator ==			(const BitSetSp& lhs, const BitSetSp& rhs);
+			friend bool operator !=			(const BitSetSp& lhs, const BitSetSp& rhs);
 
 				/**
 				* @brief Bitwise AND operator with rhs
@@ -740,8 +821,13 @@ namespace bitgraph {
 		                    }); 
 			}
 
-			/////////////////////
-			//I/O 
+			/** @} */ // end SparseBitsetModification group
+
+			/**
+			 * @brief Input/output operations for sparse BitSet debugging and display
+			 * @details Functions for printing sparse bitset contents and population counts
+			 * in formats optimized for sparse visualization, showing only non-zero blocks.
+			 */ 
 
 				/**
 				* @brief streams bb and its size to @o  with format

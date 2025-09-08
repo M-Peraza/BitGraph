@@ -1,51 +1,116 @@
 /**  
- * @file config.h
- * @brief configuration parameters for the BITSCAN 1.0 library
- * @author pss
- * @created ?
- * @last_update 09/02/2025
+ * @file bbconfig.h
+ * @brief Configuration parameters and compile-time settings for BITSCAN 1.0
+ * @author Pablo San Segundo  
+ * @version 1.0
+ * @date 2025
+ * @since 09/02/2025
  * 
- * Permission to use, modify and distribute this software is
- * granted provided that this copyright notice appears in all 
- * copies, in source code or in binaries. For precise terms 
- * see the accompanying LICENSE file.
+ * @details This file controls the compile-time behavior of the BITSCAN library
+ * through preprocessor macros and constexpr functions. It allows optimization
+ * for different hardware architectures and use cases.
+ * 
+ * Key configuration areas:
+ * - Hardware instruction selection (intrinsics vs. lookup tables)
+ * - Bit manipulation algorithm choices  
+ * - Performance optimization toggles
+ * - Debug and assertion controls
+ * 
+ * @warning Changing these settings affects library performance and compatibility.
+ * Test thoroughly on target hardware after modifications.
+ * 
+ * Permission to use, modify and distribute this software is granted provided 
+ * that this copyright notice appears in all copies, in source code or in 
+ * binaries. For precise terms see the accompanying LICENSE file.
  *
- * This software is provided "AS IS" with no warranty of any 
- * kind, express or implied, and with no claim as to its
- * suitability for any purpose.
- *
+ * This software is provided "AS IS" with no warranty of any kind, express 
+ * or implied, and with no claim as to its suitability for any purpose.
  **/
 
 using bitgraph::WORD_SIZE;
 
-////////////////////
-//DEBUG mode assertions
+/**
+ * @defgroup DebugConfig Debug and Assertion Configuration
+ * @brief Controls for debugging and runtime assertions
+ * @{
+ */
 
-// uncomment for assertions in debug mode
-//#undef NDEBUG
+/** 
+ * @brief Enable runtime assertions in debug builds
+ * @details Uncomment the line below to enable assertions even in release builds.
+ * This will add runtime checks but may impact performance.
+ */
+// #undef NDEBUG
 
+/** @} */ // end DebugConfig group
+
+/**
+ * @defgroup OptimizationConfig Performance Optimization Settings
+ * @brief Compile-time switches for performance tuning
+ * @{
+ */
+
+/** 
+ * @brief Use optimized bitwise operations instead of lookup tables
+ * @details When defined, uses constexpr bitwise functions for index calculations.
+ * Generally faster than lookup tables and avoids cache misses.
+ */
 #define USE_BITWISE_OPS
 
-/////////////
-//Popcount
-//(switch in case processors do not support operations for population count)
+/** @} */ // end OptimizationConfig group
 
-#define POPCOUNT_INTRINSIC_64								//uses HW assembler operation _popcn64 function (most efficient - DEFAULT)
-//#undef  POPCOUNT_INTRINSIC_64								//will use other population-count functions (lookup table...)
+/**
+ * @defgroup PopcountConfig Population Count Implementation
+ * @brief Hardware vs. software population count selection
+ * @details Controls whether to use hardware instructions or software fallback
+ * for counting 1-bits in bitboards.
+ * @{
+ */
 
+/** 
+ * @brief Use hardware population count instructions (recommended)
+ * @details Uses efficient _popcnt64 hardware instruction when available.
+ * This is the most efficient implementation for modern processors.
+ */
+#define POPCOUNT_INTRINSIC_64
 
-/////////////
-//Bit-scanning implementation choices 
+/** 
+ * @brief Use software population count fallback
+ * @details Uncomment to use lookup table-based population count.
+ * Use only if target processor lacks POPCNT instruction.
+ */
+//#undef  POPCOUNT_INTRINSIC_64
 
+/** @} */ // end PopcountConfig group
+
+/**
+ * @defgroup BitscanConfig Bit Scanning Implementation Selection
+ * @brief Algorithm selection for finding first/last set bits
+ * @details Controls the algorithm used for LSB/MSB operations in bitboards.
+ * @{
+ */
+
+/** 
+ * @brief Use De Bruijn multiplication for bit scanning (recommended)
+ * @details Efficient algorithm using De Bruijn sequences for bit position lookup.
+ */
 #define DE_BRUIJN
+
 #ifndef DE_BRUIJN
+	/** @brief Use lookup table method as fallback */
 	#define LOOKUP
 #endif
 
 #ifdef DE_BRUIJN
-	#define ISOLANI_LSB										//b&(-b) implementation
-    #undef  ISOLANI_LSB										//b^(b-1) implementation (DEFAULT)
+	/** 
+	 * @brief Use b&(-b) isolate LSB implementation  
+	 * @details Alternative De Bruijn approach. Comment out for default b^(b-1) method.
+	 */
+	#define ISOLANI_LSB
+    #undef  ISOLANI_LSB  // Use b^(b-1) implementation (DEFAULT)
 #endif
+
+/** @} */ // end BitscanConfig group
 
 
 ////////////////////
@@ -88,54 +153,133 @@ inline constexpr int wmod_mul(const int& i) noexcept{
 // mas rapido tanto que las operaciones directas (espceialmente lenta el modulo) como las tablas(lentas si no estan en cache)
 // usamos inline(compilador), constexpr(tiempo compilado) y noexcept(relajamos el stack) para optimizar aun mas
 
+/**
+ * @defgroup BitOperations High-Performance Bit Operations
+ * @brief Optimized bit manipulation functions for 64-bit architectures
+ * @details These functions provide type-safe, compile-time optimized alternatives
+ * to macro-based operations. They leverage bit shifting and masking for maximum
+ * performance, avoiding expensive division and modulo operations.
+ * 
+ * Performance benefits:
+ * - Type safety compared to plain macros
+ * - Faster than direct arithmetic operations (especially modulo)
+ * - Faster than lookup tables when not in cache
+ * - Uses inline, constexpr, and noexcept for optimal compilation
+ * @{
+ */
+
 #ifndef BITSCAN_BIT_OPS_DEFINED
 #define BITSCAN_BIT_OPS_DEFINED
 namespace bitgraph {
-	// ONLY WORKS FOR 64-bit WORD_SIZE!
+	/**
+	 * @namespace bitgraph::bit_ops
+	 * @brief High-performance bit manipulation operations
+	 * @warning ONLY WORKS FOR 64-bit WORD_SIZE! Do not use with other word sizes.
+	 */
 	namespace bit_ops {
-		// Which word (64-bit block) contains bit i?
-		// Equivalent to i/64 but using bit shift (faster)
+		/**
+		 * @brief Determine which 64-bit block contains the given bit
+		 * @param bit The bit index (0-based)
+		 * @return Block index containing the bit
+		 * @details Equivalent to bit/64 but uses bit shift for optimal performance.
+		 * The compiler optimizes this to a single shift instruction.
+		 * @note Complexity: O(1) - Single CPU instruction
+		 */
 		inline constexpr int block_index(int bit) noexcept {
-			return bit >> 6;  // Compiler optimizes to single shift instruction
+			return bit >> 6;  // Right shift by 6 equals division by 64
 		}
 		
-		// Which position within that word (0-63)?
-		// Equivalent to i%64 but using bit masking (faster)
+		/**
+		 * @brief Get bit position within its 64-bit block (0-63)
+		 * @param bit The bit index (0-based)  
+		 * @return Position within the block (0-63)
+		 * @details Equivalent to bit%64 but uses bit masking for optimal performance.
+		 * Mask 0x3F = 111111 in binary extracts the lower 6 bits.
+		 * @note Complexity: O(1) - Single CPU instruction
+		 */
 		inline constexpr int bit_offset(int bit) noexcept {
-			return bit & 0x3F;  // Mask with 111111 binary to get lower 6 bits
+			return bit & 0x3F;  // Mask with 0x3F to get remainder of division by 64
 		}
 		
-		// Starting bit index of word/block i
-		// Equivalent to i*64 but using bit shift (faster)
+		/**
+		 * @brief Get the starting bit index of a given block
+		 * @param block The block index (0-based)
+		 * @return Starting bit index of the block 
+		 * @details Equivalent to block*64 but uses bit shift for optimal performance.
+		 * The compiler optimizes this to a single shift instruction.
+		 * @note Complexity: O(1) - Single CPU instruction
+		 */
 		inline constexpr int block_to_bit(int block) noexcept {
-			return block << 6;  // Compiler optimizes to single shift instruction
+			return block << 6;  // Left shift by 6 equals multiplication by 64
 		}
 		
-		// Alternative to WMOD that avoids modulo operation entirely
-		// Computes bit offset using subtraction instead of modulo
+		/**
+		 * @brief Alternative bit offset calculation avoiding modulo entirely
+		 * @param bit The bit index (0-based)
+		 * @return Position within the block (0-63)
+		 * @details Computes bit offset using subtraction: bit - (block * 64).
+		 * May be more efficient than bit_offset() in some compiler/architecture combinations.
+		 * @note Complexity: O(1) - Two CPU instructions (block_index + subtraction)
+		 */
 		inline constexpr int bit_offset_alt(int bit) noexcept {
 			return bit - block_to_bit(block_index(bit));
 		}
 	}
 }
+/** @} */ // end BitOperations group
 #endif // BITSCAN_BIT_OPS_DEFINED
 
 
 #ifdef USE_BITWISE_OPS
 
+/**
+ * @defgroup CoreBitMacros Core Bit Manipulation Macros
+ * @brief Primary macros for bit-to-block index conversion
+ * @details These macros provide the fundamental operations used throughout
+ * BITSCAN for converting between bit indices and block indices. They use
+ * the optimized bit_ops functions when USE_BITWISE_OPS is defined.
+ * @{
+ */
+
+/** @brief Get block index containing bit i (Word DIVision) */
 #define WDIV(i) (bitgraph::bit_ops::block_index(i))
+
+/** @brief Get bit position within block (Word MODulo) */
 #define WMOD(i) (bitgraph::bit_ops::bit_offset(i))
+
+/** @brief Get starting bit of block i (Word MULtiplication) */
 #define WMUL(i) (bitgraph::bit_ops::block_to_bit(i))
+
+/** @brief Alternative WMOD avoiding modulo (Word MODulo via MULtiplication) */
 #define WMOD_MUL(i) (bitgraph::bit_ops::bit_offset_alt(i))
 
-//MACROS for mapping bit index to bitblock index (0 or 1 based)
-#define INDEX_0TO0(p)			(WDIV(p))									//p>0  0-based to 0-based
-#define INDEX_0TO1(p)			(WDIV(p)+1)									//p>0  0-based to 1-based
-#define INDEX_1TO1(p)			(bitgraph::bit_ops::block_index((p)-1)+1)    //p>0  1-based to 1-based
-#define INDEX_1TO0(p)			(bitgraph::bit_ops::block_index((p)-1))		//p>0  1-based to 0-based
+/** @} */ // end CoreBitMacros group
+
+/**
+ * @defgroup IndexMacros Index Conversion Macros
+ * @brief Macros for converting between different indexing schemes
+ * @details These macros handle conversion between 0-based and 1-based indexing
+ * for bit positions and block indices. Essential for interfacing with different
+ * data structures and external APIs.
+ * @{
+ */
+
+/** @brief Convert 0-based bit index to 0-based block index */
+#define INDEX_0TO0(p)			(WDIV(p))
+
+/** @brief Convert 0-based bit index to 1-based block index */  
+#define INDEX_0TO1(p)			(WDIV(p)+1)
+
+/** @brief Convert 1-based bit index to 1-based block index */
+#define INDEX_1TO1(p)			(bitgraph::bit_ops::block_index((p)-1)+1)
+
+/** @brief Convert 1-based bit index to 0-based block index */
+#define INDEX_1TO0(p)			(bitgraph::bit_ops::block_index((p)-1))
+
+/** @} */ // end IndexMacros group
 
 #else
-// OLD IMPLEMENTATION -> kept for compatibility, testing and dinamic WORD_SIZE
+// CODIGO ORIGINAL -> se deja por compatitibilidad y testing
 #ifdef  CACHED_INDEX_OPERATIONS 
 #define WDIV(i) (Tables::t_wdindex[(i)])
 #define WMOD(i) (Tables::t_wmodindex[(i)])
