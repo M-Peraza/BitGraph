@@ -198,7 +198,7 @@ namespace bitgraph {
 				return lhs.OR_EQUAL_block<true>(firstBlock, lastBlock, rhs);
 			}
 
-			// NUEVA IMPLEMENTACION(Faltaba XOR)
+			//NUEVA IMPLEMENTACION(Faltaba XOR)
 			/**
 			* @brief XOR between lhs and rhs bitsets
 			* @details Takes lhs by value to enable move semantics
@@ -822,7 +822,7 @@ namespace bitgraph {
 			**/
 			friend BitSet& erase_bit(const BitSet& lhs, const BitSet& rhs, BitSet& res);										//removes rhs from lhs
 			
-			// NUEVA IMPLEMENTACION
+			//NUEVA IMPLEMENTACION
 			/**
 			* @brief Removes the 1-bits in rhs from lhs
 			* @details Takes lhs by value to enable move semantics
@@ -1309,7 +1309,7 @@ namespace bitgraph{
 			}
 			else
 			{	
-				// CODIGO ORIGINAL:
+				//CODIGO ORIGINAL:
 				//set to one the intermediate blocks
 				// for (int i = bbl + 1; i < bbh; ++i) {
 				// 	vBB_[i] = bitgraph::constants::ALL_ONES;
@@ -1342,7 +1342,7 @@ namespace bitgraph{
 			assert(nBB_ <= bb_add.nBB_);
 			/////////////////////////////////
 			
-			// CODIGO ORIGINAL:
+			//CODIGO ORIGINAL:
 			// for (auto i = 0; i < nBB_; ++i) {
 			// 	vBB_[i] |= bb_add.vBB_[i];
 			// }
@@ -1363,7 +1363,7 @@ namespace bitgraph{
 			assert((firstBlock >= 0) && (last_block < bb_add.capacity()) && (firstBlock <= last_block));
 			///////////////////////////////////////////////////////////////////////////////////////////
 
-			// CODIGO ORIGINAL:
+			//CODIGO ORIGINAL:
 			// for (auto i = firstBlock; i <= last_block; ++i) {
 			// 	vBB_[i] |= bb_add.vBB_[i];
 			// }
@@ -1378,7 +1378,7 @@ namespace bitgraph{
 
 		BitSet& BitSet::erase_bit() {
 
-			// CODIGO ORIGINAL:
+			//CODIGO ORIGINAL:
 			// for (auto i = 0; i < nBB_; ++i) {
 			// 	vBB_[i] = bitgraph::constants::ALL_ZEROS;
 			// }
@@ -1418,7 +1418,7 @@ namespace bitgraph{
 			}
 			else
 			{	
-				// CODIGO ORIGINAL:
+				//CODIGO ORIGINAL:
 				//set to one the intermediate blocks
 				// for (int i = bbl + 1; i < bbh; ++i) {
 				// 	vBB_[i] = bitgraph::constants::ALL_ZEROS;
@@ -1537,7 +1537,7 @@ namespace bitgraph{
 
 		int BitSet::popcn64() const {
 			
-			// CODIGO ORIGINAL:
+			//CODIGO ORIGINAL:
 			// BITBOARD pc = 0;
 
 			// for (auto i = 0; i < nBB_ /*vBB_.size()*/; ++i) {
@@ -1573,7 +1573,7 @@ namespace bitgraph{
 			}
 			else
 			{	
-				// CODIGO ORIGINAL:
+				//CODIGO ORIGINAL:
 				//count the population of the intermediate blocks
 				// for (auto i = bbl + 1; i < bbh; ++i) {
 				// 	pc += bblock::popc64(vBB_[i]);
@@ -1737,7 +1737,7 @@ namespace bitgraph{
 
 		BitSet& BitSet::erase_bit(const BitSet& bbn) {
 
-			// CODIGO ORIGINAL:
+			//CODIGO ORIGINAL:
 			// for (auto i = 0; i < nBB_; ++i) {
 			// 	vBB_[i] &= ~bbn.vBB_[i];
 			// }
@@ -1794,7 +1794,7 @@ namespace bitgraph{
 			assert((firstBlock >= 0) && (last_block < bb_del.capacity()) && (firstBlock <= last_block));
 			///////////////////////////////////////////////////////////////////////////////
 			
-			// CODIGO ORIGINAL:
+			//CODIGO ORIGINAL:
 			// for (auto i = firstBlock; i <= last_block; ++i) {
 			// 	vBB_[i] &= ~bb_del.vBB_[i];
 			// }

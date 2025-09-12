@@ -601,7 +601,7 @@ namespace bitgraph {
 		inline
 			void bbStack_t<BitSet_t>::sync_bb() {
 				bb_.erase_bit();
-				//CODIGOI ORIGINAL
+				//CODIGO ORIGINAL
 				// 	for (auto i = 0; i < stack_.size(); i++) {
 				// 	bb_.set_bit(stack_[i]);
 				// }

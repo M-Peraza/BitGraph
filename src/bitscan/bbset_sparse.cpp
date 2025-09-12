@@ -389,7 +389,7 @@ BitSetSp& BitSetSp::set_bit (const BitSetSp& rhs){
 	return *this;		
 }
 
-// NUEVA IMPLEMENTACION -> comentada porque esta borrada en los headers
+//NUEVA IMPLEMENTACION -> comentada porque esta borrada en los headers
 /*BitSetSp& BitSetSp::set_bit(int firstBit, int lastBit, const BitSetSp& rhs) {
 	
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -580,7 +580,7 @@ BitSetSp&  BitSetSp::set_block (int firstBlock, int lastBlock, const BitSetSp& r
 
 	//sort if required
 	if (flag_sort) {
-		// CODIGO ORIGINAL std::sort(vBB_.begin(), vBB_.end(), pBlock_less());
+		//CODIGO ORIGINAL std::sort(vBB_.begin(), vBB_.end(), pBlock_less());
 		std::sort(vBB_.begin(), vBB_.end(), 
 						[](const pBlock_t& a, const pBlock_t& b) { 
 							return a.idx_ < b.idx_; 
@@ -590,7 +590,7 @@ BitSetSp&  BitSetSp::set_block (int firstBlock, int lastBlock, const BitSetSp& r
 	return *this;		
 }
 
-// NUEVA IMPLEMENTACION -> Esta borrada en bbset_sparse.h
+//NUEVA IMPLEMENTACION -> Esta borrada en bbset_sparse.h
 /*
 BitSetSp& BitSetSp::AND_block(int firstBlock, int lastBlock, const BitSetSp& rhs) {
 	
@@ -627,7 +627,7 @@ BitSetSp& BitSetSp::AND_block(int firstBlock, int lastBlock, const BitSetSp& rhs
 }
 */
 
-// NUEVA IMPLEMENTACION
+//NUEVA IMPLEMENTACION
 BitSetSp& BitSetSp::flip() {
 	// Flipping a sparse bitset requires converting to dense representation
 	// This is expensive but necessary for NOT operation
@@ -829,7 +829,7 @@ BitSetSp& BitSetSp::operator &= (const BitSetSp& rhs){
 	//delete remaining blocks in THIS 
 	if (itR == rhs.vBB_.end()) {
 		
-		// CODIGO ORIGINAL
+		//CODIGO ORIGINAL
 		// for (; itL != vBB_.end(); ++itL) {
 
 		// 	////////////////////////////
@@ -956,7 +956,7 @@ BitSetSp& BitSetSp::operator ^= (const BitSetSp& rhs) {
 BITBOARD BitSetSp::find_block (int blockID) const{
 
 	////////////////////////////////////////////////////////////////////////////////////////////
-	// CODIGO ORIGINAL
+	//CODIGO ORIGINAL
 	// auto it = lower_bound(vBB_.cbegin(), vBB_.cend(), pBlock_t(blockID), pBlock_less());
 	////////////////////////////////////////////////////////////////////////////////////////////
 	auto it = std::lower_bound(vBB_.cbegin(), vBB_.cend(), pBlock_t(blockID),
@@ -979,7 +979,7 @@ BitSetSp::find_block_pos (int blockID) const{
 	std::pair<bool, int> res(false, EMPTY_ELEM);
 
 	////////////////////////////////////////////////////////////////////////////////////////////
-	// CODIGO ORIGINAL
+	//CODIGO ORIGINAL
 	// auto it = lower_bound(vBB_.cbegin(), vBB_.cend(), pBlock_t(blockID), pBlock_less());
 	////////////////////////////////////////////////////////////////////////////////////////////
 

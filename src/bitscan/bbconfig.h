@@ -279,7 +279,7 @@ namespace bitgraph {
 /** @} */ // end IndexMacros group
 
 #else
-// CODIGO ORIGINAL -> se deja por compatitibilidad y testing
+//CODIGO ORIGINAL -> se deja por compatitibilidad y testing
 #ifdef  CACHED_INDEX_OPERATIONS 
 #define WDIV(i) (Tables::t_wdindex[(i)])
 #define WMOD(i) (Tables::t_wmodindex[(i)])
